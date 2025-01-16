@@ -23,7 +23,15 @@
                     <!-- 动态生成表格 -->
                 </table>
             </div>
-            <br>
+            <div class="h1ContainerItem">
+                <button id="action-btn" class="controlButton" onclick="performAction()">行动</button>
+                <button id="reset-btn" class="controlButton" onclick="resetBoard()">重置</button>
+            </div>
+            <div class="h1ContainerItem" style="display: block;">
+                <p class="p-left">🎯【抽中次数：<label id="drawn-count">0</label>】</p>
+                <p class="p-left">🎲【抽取次数：<label id="current-actions">0</label>】</p>
+                <p class="p-left">✈️【进度：<label id="progress-value">0.00%</label>】</p>
+            </div>
             <div class="h1ContainerItem">
                 <div class="progress-container">
                     <div id="progressBar"></div>
@@ -36,16 +44,6 @@
                         <div class="point" style="left: 94%">25</div>
                     </div>
                 </div>
-            </div>
-            <div class="h1ContainerItem" style="gap: 40px;">
-                <p class="p-left">【抽中次数：<label id="drawn-count">0</label>】</p>
-                <p class="p-left">【抽取次数：<label id="current-actions">0</label>】</p>
-                <p class="p-left">【进度：<label id="progress-value">0%</label>】</p>
-            </div>
-            <br>
-            <div class="h1ContainerItem">
-                <button id="action-btn" class="controlButton" onclick="performAction()">行动</button>
-                <button id="reset-btn" class="controlButton" onclick="resetBoard()">重置</button>
             </div>
         </div>
     </div>
@@ -172,8 +170,8 @@
     // 进度条效果
     function progressEffect() {
         const progressBar_element = document.getElementById("progressBar");
-        let prossbar_value = Math.round((drawnCount / (rows * cols)) * 100);
-        document.getElementById("progress-value").textContent = prossbar_value + "%";
+        let prossbar_value = Math.round((drawnCount / (rows * cols)) * 10000)/100;
+        document.getElementById("progress-value").textContent = prossbar_value.toFixed(2) + "%";
         if (prossbar_value >= 100) {
             prossbar_value = 100;
         }
@@ -358,7 +356,7 @@
         width: 18px;
         height: 18px;
         background-color: #dfe6e9;
-        border: 1px solid black;
+        border: 1px solid grey;
         border-radius: 50%;
     }
 </style>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>棋盘抽签</title>
+</head>
+
+<body>
+    <div id="bodyContainer">
+        <!-- 标题 -->
+        <h1 id="title">
+            <span>棋</span>
+            <span>盘</span>
+            <span>抽</span>
+            <span>签</span>
+        </h1>
+        <div class="h1Container">
+            <br>
+            <div class="h1ContainerItem">
+                <table id="chessboard">
+                    <!-- 动态生成表格 -->
+                </table>
+            </div>
+            <br>
+            <div class="h1ContainerItem">
+                <div class="progress-container">
+                    <div id="progressBar"></div>
+                    <div class="progress-points">
+                        <div class="point" style="left: 1%">1</div>
+                        <div class="point" style="left: 14%">5</div>
+                        <div class="point" style="left: 34%">10</div>
+                        <div class="point" style="left: 54%">15</div>
+                        <div class="point" style="left: 74%">20</div>
+                        <div class="point" style="left: 94%">25</div>
+                    </div>
+                </div>
+            </div>
+            <div class="h1ContainerItem" style="gap: 40px;">
+                <p class="p-left">【抽中次数：<label id="drawn-count">0</label>】</p>
+                <p class="p-left">【抽取次数：<label id="current-actions">0</label>】</p>
+                <p class="p-left">【进度：<label id="progress-value">0%</label>】</p>
+            </div>
+            <br>
+            <div class="h1ContainerItem">
+                <button id="action-btn" class="controlButton" onclick="performAction()">行动</button>
+                <button id="reset-btn" class="controlButton" onclick="resetBoard()">重置</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    const rows = 5; // 行数
+    const cols = 5; // 列数
+    let board = []; // 棋盘数组
+    let drawnCount = 0; // 抽中的次数
+    let currentActions = 0; // 当前抽取的次数
+    let maxActions = 250; // 行动上限次数
+    let firstWeight = 1; // 先权重
+    let secondWeight = 4; // 后权重
+
+    document.addEventListener("DOMContentLoaded", () => {
+        createBoard(); // 页面加载后创建棋盘
+    });
+
+    // 创建棋盘
+    function createBoard() {
+        const table = document.getElementById("chessboard");
+        for (let i = 0; i < rows; i++) {
+            const row = document.createElement("tr");
+            board[i] = [];
+            for (let j = 0; j < cols; j++) {
+                const cell = document.createElement("td");
+                cell.id = `cell-${i}-${j}`;
+                cell.dataset.value = "0";
+                row.appendChild(cell);
+                board[i][j] = 0;
+            }
+            table.appendChild(row);
+        }
+    }
+
+    // 执行动作
+    function performAction() {
+        // 超过行动上限时显示所有单元格
+        if (currentActions >= maxActions - 1) {
+            revealAllCells();
+            showCustomDialog(head_text = "提示：", p_text = ["行动次数已达到上限,", "已强制翻转所有所有格子！",]);
+            return;
+        }
+        // 抽取单元格
+        const [row, col] = selectCell();
+        const cellElement = document.getElementById(`cell-${row}-${col}`);// 获取单元格元素
+        board[row][col]++; // 增加选中单元格的值
+        cellElement.textContent = board[row][col]; // 更新单元格文本
+
+        // 根据单元格的值设置背景颜色和透明度
+        if (board[row][col] <= 5) {
+            let alpha = Math.min(0.2 + board[row][col] * 0.1, 1); // 最大透明度为 1
+            cellElement.style.backgroundColor = `rgba(255, 255, 0, ${alpha})`;
+        } else if (board[row][col] <= 10) {
+            let alpha = Math.min(0.2 + (board[row][col] - 5) * 0.1, 1);
+            cellElement.style.backgroundColor = `rgba(255, 165, 0, ${alpha})`;
+        } else {
+            let alpha = Math.min(0.2 + (board[row][col] - 10) * 0.1, 1);
+            cellElement.style.backgroundColor = `rgba(135, 52, 36, ${alpha})`;
+        }
+
+        cellElement.classList.add("red-border"); // 添加红色边框
+
+        setTimeout(() => {
+            cellElement.classList.remove("red-border"); // 移除红色边框
+        }, 640);
+
+        currentActions++;
+        if (board[row][col] === 1) {
+            drawnCount++;
+        }
+        updateStats(); // 更新统计信息
+        if (checkAllCellsRevealed()) {
+            showCustomDialog(head_text = "恭喜：", p_text = ["所有方格已翻转！",]);
+        }
+    }
+
+    // 选择一个单元格
+    function selectCell() {
+        const weights = [];
+
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                weights.push(board[i][j] === 0 ? firstWeight : secondWeight); // 权重计算
+            }
+        }
+
+        const totalWeight = weights.reduce((acc, cur) => acc + cur, 0);
+        let random = Math.random() * totalWeight;
+
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                random -= weights[i * cols + j];
+                if (random <= 0) {
+                    return [i, j];
+                }
+            }
+        }
+    }
+
+    // 显示所有单元格
+    function revealAllCells() {
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                if (board[i][j] === 0) {
+                    board[i][j] = 1;
+                    const cellElement = document.getElementById(`cell-${i}-${j}`);
+                    cellElement.textContent = board[i][j];
+                    cellElement.style.backgroundColor = "rgba(123, 237, 159, 0.2)";
+                }
+            }
+        }
+        drawnCount = rows * cols;
+        currentActions++;
+        updateStats(); // 更新统计信息
+    }
+
+    // 更新统计信息
+    function updateStats() {
+        progressEffect();
+        document.getElementById("drawn-count").textContent = drawnCount;
+        document.getElementById("current-actions").textContent = currentActions;
+    }
+    // 进度条效果
+    function progressEffect() {
+        const progressBar_element = document.getElementById("progressBar");
+        let prossbar_value = Math.round((drawnCount / (rows * cols)) * 100);
+        document.getElementById("progress-value").textContent = prossbar_value + "%";
+        if (prossbar_value >= 100) {
+            prossbar_value = 100;
+        }
+        progressBar_element.style.width = prossbar_value + "%";
+    }
+
+    // 检测是否所有方格都被翻转
+    function checkAllCellsRevealed() {
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                if (board[i][j] === 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // 重置棋盘
+    function resetBoard() {
+        board = [];
+        drawnCount = 0;
+        currentActions = 0;
+        document.getElementById("chessboard").innerHTML = "";
+        createBoard();
+        updateStats();
+    }
+
+</script>
+<style>
+    /* 标题样式 */
+    #title {
+        width: 60%;
+        max-width: 600px;
+        font-size: 32px;
+        color: #333;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+        background: linear-gradient(to right, #f0f0f0, #ddd);
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 8px 14px;
+        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        margin: 0 auto 20px;
+        text-align: center;
+    }
+
+    #title:hover {
+        background: linear-gradient(to right, #ddd, #f0f0f0);
+        transform: translateY(-4px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #title span {
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+
+    #title span:hover {
+        transform: scale(1.5);
+    }
+
+    /* body容器 */
+    #bodyContainer {
+        text-align: center;
+        max-width: 600px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        margin: 0 auto;
+        user-select: none;
+    }
+
+    /* h1同级容器 */
+    .h1Container {
+        text-align: center;
+        max-width: 500px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        margin: 20px auto;
+        background: linear-gradient(to bottom, #cbebff, #f0f9ff);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* h1容器内部元素 */
+    .h1ContainerItem {
+        display: flex;
+        gap: 60px;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* 控件按钮 */
+    .controlButton {
+        font-size: 18px;
+        padding: 8px 16px;
+        margin: 4px;
+        cursor: pointer;
+        transform: scale(1);
+        transition: transform 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .controlButton:active {
+        transform: scale(0.95);
+        animation: zoomEffect 0.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes zoomEffect {
+        0% {
+            transform: scale(1);
+        }
+
+        100% {
+            transform: scale(0.95);
+        }
+    }
+
+    /* 棋盘 */
+    table {
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    /* 表格单元格样式 */
+    td {
+        width: 60px;
+        height: 60px;
+        border: 1px solid black;
+        font-weight: bold;
+        color: black;
+        box-sizing: border-box;
+    }
+
+    /* 红色边框样式 */
+    .red-border {
+        border: 2px solid orange;
+        outline: 3px solid red;
+    }
+
+    /* 进度条 */
+    .progress-container {
+        width: 80%;
+        height: 30px;
+        background-color: #d1e3f1;
+        border-radius: 16px;
+        position: relative;
+    }
+
+    #progressBar {
+        height: 100%;
+        background: linear-gradient(45deg, #abdcff, #0396ff);
+        border-radius: 16px 18px 18px 16px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transition: width 0.5s ease;
+    }
+
+    .progress-points {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+    }
+
+    .point {
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        background-color: #dfe6e9;
+        border: 1px solid black;
+        border-radius: 50%;
+    }
+</style>
+</style>
+
+<!-- 弹窗 -->
+<div id="customDialog">
+    <div class="custom-dialog-content">
+        <h2 class="h2_dialog">
+            <svg t="1733489872556" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                p-id="4285">
+                <path
+                    d="M544 789.333333h105.173333a10.666667 10.666667 0 0 0 10.666667-10.666666v-0.362667l-3.232-94.304a32 32 0 0 1 14.293333-27.765333C750.933333 603.189333 800 513.792 800 416c0-159.061333-128.938667-288-288-288S224 256.938667 224 416c0 97.813333 49.098667 187.232 129.141333 240.266667a32 32 0 0 1 14.314667 25.578666l3.338667 97.184a10.666667 10.666667 0 0 0 10.666666 10.304H480V572.693333l-76.64-81.429333a32 32 0 0 1 46.613333-43.861333l63.36 67.328 72.693334-68.661334a32 32 0 0 1 43.946666 46.528L544 573.792V789.333333z m320-373.333333a351.530667 351.530667 0 0 1-142.826667 283.146667l2.634667 76.96A74.666667 74.666667 0 0 1 649.173333 853.333333h-267.733333a74.666667 74.666667 0 0 1-74.624-72.106666l-2.784-81.194667A351.541333 351.541333 0 0 1 160 416C160 221.6 317.6 64 512 64s352 157.6 352 352zM416 960a32 32 0 0 1 0-64h192a32 32 0 0 1 0 64H416z"
+                    fill="#000000" p-id="4286"></path>
+            </svg>
+            <span id="headSpan">恭喜：</span>
+        </h2>
+        <div id="info_container">所有方格已翻转！</div>
+        <div class="h1ContainerItem" style="margin-top: 18px;">
+            <button id="confirmButton" class="controlButton">确认</button>
+            <button id="retryButton" class="controlButton">重试</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 窗口元素
+    const dialog_element = document.getElementById('customDialog');
+    const headSpan_element = document.getElementById('headSpan');
+    const info_container_element = document.getElementById('info_container');
+    const confirmButton_element = document.getElementById('confirmButton');
+    const retryButton_element = document.getElementById('retryButton');
+    // 窗口显示函数
+    function showCustomDialog(head_text = "提示：", p_text = ["暂无信息",]) {
+        // 显示弹窗
+        dialog_element.style.display = 'flex';
+        // 设置文本内容
+        headSpan_element.textContent = head_text;
+        info_container_element.innerHTML = "";
+        // 遍历 p_text 数组，插入每一段文本，并用 <br> 换行
+        p_text.forEach(text => {
+            const p = document.createElement('p');
+            p.classList.add('p_text');
+            p.textContent = text;
+            info_container_element.appendChild(p);
+        });
+
+        // 确认按钮点击时触发的逻辑
+        confirmButton_element.onclick = function () {
+            dialog_element.style.display = 'none';
+        };
+        // 重试按钮点击时触发的逻辑
+        retryButton_element.onclick = function () {
+            dialog_element.style.display = 'none';
+            resetBoard()
+        }
+    }
+</script>
+<style>
+    /* 对话框的背景遮罩 */
+    #customDialog {
+        display: none;
+        /* 初始时隐藏 */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+    }
+
+    /* 对话框标题 */
+    .h2_dialog {
+        text-align: left;
+    }
+
+    .h2_dialog svg {
+        width: 1em;
+        height: 1em;
+        margin-bottom: 10px;
+        vertical-align: middle;
+    }
+
+    /* 对话框内容 */
+    .custom-dialog-content {
+        background: linear-gradient(278deg, #7b8d9b, #ffffff);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+        width: 320px;
+    }
+
+    /* 文本样式 */
+    .p_text {
+        font-size: 18px;
+        color: #333;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        text-align: center;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-weight: 400;
+    }
+</style>
+
+</html>

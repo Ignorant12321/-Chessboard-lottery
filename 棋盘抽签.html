@@ -81,7 +81,7 @@
                     <p class="p_small">（重置使能设置，行动失能设置）</p>
                 </div>
                 <div class="tab-content active" id="tab-2">
-                    <h2 id="tab2_header" class="h2_tab" onclick="drawChart(ctx2, data2);">棋盘分析</h2>
+                    <h2 id="tab2_header" class="h2_tab" onclick="drawChart(ctx2, data2, 2);">棋盘分析</h2>
                     <canvas id="dataChart2" class="dataChart"></canvas>
                 </div>
                 <div class="tab-content" id="tab-3">
@@ -367,7 +367,7 @@
             });
             // 根据选项卡ID执行相应操作
             if (tabId === 'tab-2') {
-                drawChart(ctx2, data2);
+                drawChart(ctx2, data2, 2);
             } else if (tabId === 'tab-3') {
                 times_element.value = 10;
                 times = 10;
@@ -679,7 +679,7 @@
     // 窗口显示函数
     function showCustomDialog(head_text = "提示：", p_text = ["暂无信息",]) {
         // 绘制散点图
-        drawChart(ctx2, data2);
+        drawChart(ctx2, data2, 2);
         // 显示弹窗
         dialog_element.style.display = 'flex';
         // 设置文本内容
@@ -769,7 +769,7 @@
         data2 = [];
         data2.push({ x: 0, y: 0 },);
         totalCells = rows * cols;
-        drawChart(ctx2, data2);
+        drawChart(ctx2, data2, 2);
     }
     function init_data3() {
         data3 = [];
@@ -787,7 +787,7 @@
     }
 
     // 创建散点图
-    function drawChart(ctx, data) {
+    function drawChart(ctx, data, radius = 1) {
         // 销毁旧的图表实例（如果存在）
         if (window.scatterChart) {
             window.scatterChart.destroy();
@@ -801,7 +801,7 @@
                     backgroundColor: 'rgba(75, 192, 192, 0.8)', // 点的颜色
                     borderColor: 'rgba(75, 192, 192, 1)', // 边框颜色
                     borderWidth: 1,
-                    radius: 2 // 设置散点的大小
+                    radius: radius // 设置散点的大小
                 }]
             },
             options: {
@@ -906,15 +906,16 @@
         while (!flag_end) {
             performAction_3();
         }
-        drawChart(ctx3, data3);
     }
     function getdata_3_mul(times = "10") {
         init_data3();
         for (let i = 0; i < times; i++) {
             getdata_3();
         }
+        drawChart(ctx3, data3);
     }
 </script>
+
 </html>
 
 

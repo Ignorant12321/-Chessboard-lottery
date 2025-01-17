@@ -63,6 +63,7 @@
                 <div class="tab-button" data-tab="tab-4">🍨&nbsp;赞助</div>
             </div>
             <!-- 选项卡内容区域 -->
+            <!-- 设置选项 -->
             <div id="tab-content-container">
                 <div class="tab-content" id="tab-1">
                     <h2 id="tab1_header" class="h2_tab" onclick="resetBoard();">设置选项</h2>
@@ -80,18 +81,52 @@
                     </p>
                     <p class="p_small">（重置使能设置，行动失能设置）</p>
                 </div>
+                <!-- 棋盘分析 -->
                 <div class="tab-content active" id="tab-2">
-                    <h2 id="tab2_header" class="h2_tab" onclick="drawChart(ctx2, data2, 2);">棋盘分析</h2>
+                    <h2 id="tab2_header" class="h2_tab" onclick="draw_scatter2(2);">棋盘分析</h2>
                     <canvas id="dataChart2" class="dataChart"></canvas>
                 </div>
+                <!-- 棋盘统计 -->
                 <div class="tab-content" id="tab-3">
                     <h2 id="tab3_header" class="h2_tab" onclick="getdata_3_mul(times)">棋盘统计</h2>
-                    <canvas id="dataChart3" class="dataChart"></canvas>
+                    <!-- 目标统计次数 -->
+                    <hr class="divider-line">
+                    <hr class="divider-line">
                     <p>
-                        <label>统计次数：</label>
-                        <input type="number" id="times" class="settings-item-input" value="10" min="1" max="100">
+                        <label onclick="getdata_3_mul(times)" class="lable_clickEnable">目标统计次数：</label>
+                        <input type="number" id="times" class="settings-item-input" value="10" min="1" max="10000">
                     </p>
+                    <canvas id="dataChart3" class="dataChart"></canvas>
+                    <!-- 目标抽签次数 -->
+                    <hr class="divider-line">
+                    <hr class="divider-line">
+                    <p>
+                        <label onclick="draw_pie_draw()" class="lable_clickEnable">目标抽签次数：</label>
+                        <input type="number" id="draw_total" class="settings-item-input" value="28" min="1" max="250">
+                    </p>
+                    <canvas id="pieChart_draw" class="dataChart"></canvas>
+                    <p id="draw_total_result_p" class="result_p">
+                        <span id="d_min">🔷最小值: ？？？&nbsp;</span>
+                        <span id="d_median">⚖️中位数: ？？？&nbsp;</span>
+                        <span id="d_max">🔶最大值: ？？？</span>
+                    </p>
+                    <!-- 目标中签次数 -->
+                    <hr class="divider-line">
+                    <hr class="divider-line">
+                    <p>
+                        <label onclick="draw_pie_winning()" class="lable_clickEnable">目标中签次数：</label>
+                        <input type="number" id="winning_total" class="settings-item-input" value="19" min="1" max="25">
+                    </p>
+                    <canvas id="pieChart_winning" class="dataChart"></canvas>
+                    <p id="winning_total_result_p" class="result_p">
+                        <span id="w_min">🔷最小值: ？？？&nbsp;</span>
+                        <span id="w_median">⚖️中位数: ？？？&nbsp;</span>
+                        <span id="w_max">🔶最大值: ？？？</span>
+                    </p>
+                    <hr class="divider-line">
+                    <hr class="divider-line">
                 </div>
+                <!-- 版权申明 -->
                 <div class="tab-content" id="tab-4">
                     <h2 id="tab4_header" class="h2_tab" onclick="toggle_sponsorImg()">版权申明</h2>
                     <p>Created by Ignorant</p>
@@ -108,21 +143,31 @@
         </div>
 </body>
 <script>
+
+    let loaded_first = true;
+
     const rows = 5; // 行数
     const cols = 5; // 列数
     let board = []; // 棋盘数组
-    let times = 10; // 棋盘统计的次数
+
     let drawnCount = 0; // 抽中的次数
     let currentActions = 0; // 当前抽取的次数
+
     let maxActions = 250; // 行动上限次数
     let firstWeight = 1; // 先权重
     let secondWeight = 4; // 后权重
     let settingsEnabled = true; // 设置是否启用
 
+    let times = 10; // 棋盘统计的次数
+    let draw_total_target = 28; // 目标抽签数量
+    let winning_total_target = 19; // 目标抽中数量
+
     const firstWeight_element = document.getElementById('first-weight');
     const secondWeight_element = document.getElementById('second-weight');
     const maxActions_element = document.getElementById('max-actions');
     const times_element = document.getElementById('times');
+    const draw_total_element = document.getElementById('draw_total');
+    const winning_total_element = document.getElementById('winning_total');
     const title2_element = document.getElementById('title2');
 
     // 检查是否是移动设备
@@ -135,10 +180,16 @@
         init_data2();
         // 创建棋盘
         createBoard();
+        // 初始化图表
+        draw_scatter2();
         // 初始化权重和行动上限
         firstWeight_element.value = firstWeight;
         secondWeight_element.value = secondWeight;
         maxActions_element.value = maxActions;
+        // 初始化输入的数据
+        draw_total_element.value = draw_total_target;
+        winning_total_element.value = winning_total_target;
+        times_element.value = times;
         // 添加输入事件监听器
         firstWeight_element.addEventListener('input', function () {
             firstWeight = parseInt(this.value); // 更新先权重
@@ -152,6 +203,12 @@
         times_element.addEventListener('input', function () {
             times = parseInt(this.value); // 更新棋盘统计次数
         })
+        draw_total_element.addEventListener('input', function () {
+            draw_total_target = parseInt(this.value); // 更新目标抽签数量
+        });
+        winning_total_element.addEventListener('input', function () {
+            winning_total_target = parseInt(this.value); // 更新目标抽中数量
+        });
         // 点击标题的滚动事件
         title2_element.addEventListener('click', function () {
             title2_element.scrollIntoView({
@@ -360,20 +417,26 @@
             // 显示对应的内容
             const tabId = button.getAttribute('data-tab');
             document.getElementById(tabId).classList.add('active');
-            // 平滑滚动
-            h1Container_2_element.scrollIntoView({
-                behavior: 'smooth', // 平滑滚动
-                block: 'end'      // 滚动到图片的底部
-            });
-            // 根据选项卡ID执行相应操作
-            if (tabId === 'tab-2') {
-                drawChart(ctx2, data2, 2);
-            } else if (tabId === 'tab-3') {
-                times_element.value = 10;
-                times = 10;
-                getdata_3_mul(times);
+            if (tabId != 'tab-3') {
+                // 平滑滚动
+                h1Container_2_element.scrollIntoView({
+                    behavior: 'smooth', // 平滑滚动
+                    block: 'end'      // 滚动到图片的底部
+                });
+            } else if (tabId == 'tab-3') {
+                // 平滑滚动
+                h1Container_2_element.scrollIntoView({
+                    behavior: 'smooth', // 平滑滚动
+                    block: 'start'      // 滚动到图片的底部
+                });
             }
-            else if (tabId === 'tab-4') {
+            // 根据选项卡ID执行相应操作
+            if (tabId === 'tab-3') {
+                if (loaded_first) {
+                    getdata_3_mul(times);
+                    loaded_first = false;
+                }
+            } else if (tabId === 'tab-4') {
                 hideSponsorImg();
             }
         });
@@ -542,6 +605,14 @@
         border: 1px solid grey;
         border-radius: 50%;
     }
+
+    .lable_clickEnable {
+        cursor: pointer;
+    }
+
+    .lable_clickEnable:active {
+        animation: zoomEffect 0.2s ease-in-out infinite alternate;
+    }
 </style>
 
 <!-- 选项卡 -->
@@ -626,7 +697,7 @@
 
     /* 画布 */
     .dataChart {
-        border: 2px solid #ced4da;
+        background-color: #f9f9f9;
         display: block;
         margin: 20px auto;
         width: 100%;
@@ -646,9 +717,26 @@
     .p_small {
         font-size: small;
     }
+
+    /* 统计结果 */
+    .result_p {
+        font-size: small;
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* 样式：设置灰色分割线 */
+    .divider-line {
+        border: none;
+        height: 1px;
+        background-color: #ccc;
+        margin: 20px 0;
+    }
 </style>
 
-</style>
 <!-- 弹窗 -->
 <div id="customDialog">
     <div class="custom-dialog-content">
@@ -679,7 +767,7 @@
     // 窗口显示函数
     function showCustomDialog(head_text = "提示：", p_text = ["暂无信息",]) {
         // 绘制散点图
-        drawChart(ctx2, data2, 2);
+        draw_scatter2(2);
         // 显示弹窗
         dialog_element.style.display = 'flex';
         // 设置文本内容
@@ -704,6 +792,7 @@
         }
     }
 </script>
+
 <style>
     /* 对话框的背景遮罩 */
     #customDialog {
@@ -755,27 +844,28 @@
 </style>
 
 <script>
-    let totalCells = 0;
-    // 棋盘分析
-    let data2 = [];
-    let ctx2 = document.getElementById('dataChart2').getContext('2d');
     // 棋盘统计
-    let data3 = [];
+    let totalCells = 0;
+    let data2 = [];
+    let data3 = [];         // 棋盘数组(首次抽中的记录点
+    let data3_full = [];    // 棋盘数组（全部记录点）
+    let ctx2 = document.getElementById('dataChart2').getContext('2d');
     let ctx3 = document.getElementById('dataChart3').getContext('2d');
-
+    let scatterChart2 = null;   // 使用局部变量来存储散点图的实例
+    let scatterChart3 = null;
 
     // 初始化数据
     function init_data2() {
         data2 = [];
         data2.push({ x: 0, y: 0 },);
         totalCells = rows * cols;
-        drawChart(ctx2, data2, 2);
     }
     function init_data3() {
         data3 = [];
         data3.push({ x: 0, y: 0 },);
+        data3_full = [];
+        data3_full.push({ x: 0, y: 0 },);
         totalCells = rows * cols;
-        drawChart(ctx3, data3);
     }
 
     // 添加数据
@@ -785,15 +875,25 @@
     function data3_push(xValue = 0, yValue = 0) {
         data3.push({ x: xValue, y: yValue },);
     }
+    function data3_full_push(xValue = 0, yValue = 0) {
+        data3_full.push({ x: xValue, y: yValue },);
+    }
+    // 修改绘制图表的函数
+    function draw_scatter2(radius = 1) {
+        scatterChart2 = drawChart_scatter(ctx2, data2, radius, scatterChart2);
+    }
 
+    function draw_scatter3(radius = 1) {
+        scatterChart3 = drawChart_scatter(ctx3, data3, radius, scatterChart3);
+    }
     // 创建散点图
-    function drawChart(ctx, data, radius = 1) {
+    function drawChart_scatter(ctx, data, radius = 1, scatterChartInstance = null) {
         // 销毁旧的图表实例（如果存在）
-        if (window.scatterChart) {
-            window.scatterChart.destroy();
+        if (scatterChartInstance) {
+            scatterChartInstance.destroy();
         }
         // 创建新的散点图
-        window.scatterChart = new Chart(ctx, {
+        return new Chart(ctx, {
             type: 'scatter', // 图表类型为散点图
             data: {
                 datasets: [{
@@ -881,6 +981,7 @@
         }
         // 行动累计次数小于行动上限
         if (currentActions_3 < maxActions) {
+            data3_full_push(currentActions_3, drawnCount_3);
             if (board_3[row][col] === 1) {
                 data3_push(currentActions_3, drawnCount_3);
             }
@@ -889,6 +990,7 @@
             }
         } else if (currentActions_3 >= maxActions) {
             data3_push(currentActions_3, rows * cols);
+            data3_full_push(currentActions_3, drawnCount_3);
             flag_end = true;
         }
     }
@@ -907,12 +1009,140 @@
             performAction_3();
         }
     }
-    function getdata_3_mul(times = "10") {
+    function getdata_3_mul(times = 10) {
         init_data3();
         for (let i = 0; i < times; i++) {
             getdata_3();
         }
-        drawChart(ctx3, data3);
+        draw_scatter3();
+        draw_pie_draw();
+        draw_pie_winning();
+    }
+    // 筛选数据
+    function filterData(data, targetValue, keyChecked, keySelected) {
+        return data.filter(item => item[keyChecked] == targetValue)
+            .map(item => item[keySelected]);
+    }
+    // 统计信息
+    function calculateStatistics(data) {
+        // 检查数据是否为空
+        if (data.length === 0) {
+            return { min: null, median: null, max: null, data: [] };
+        }
+        // 排序数据
+        data.sort((a, b) => a - b);
+        const minValue = data[0];
+        const maxValue = data[data.length - 1];
+
+        // 计算中位数
+        const medianValue = data.length % 2 === 0
+            ? (data[data.length / 2 - 1] + data[data.length / 2]) / 2
+            : data[Math.floor(data.length / 2)];
+
+        return { min: minValue, median: medianValue, max: maxValue, data: data };
+    }
+</script>
+
+<!-- 创建饼图 -->
+<script>
+    let pieChartDraw = null;
+    let pieChartWinning = null;
+    const ctx_pie_draw = document.getElementById('pieChart_draw').getContext('2d');
+    const ctx_pie_winning = document.getElementById('pieChart_winning').getContext('2d');
+
+    function draw_pie_draw() {
+        let data = filterData(data3_full, draw_total_target, 'x', 'y');
+        let result = calculateStatistics(data);
+        document.querySelector('#d_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
+        document.querySelector('#d_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
+        document.querySelector('#d_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
+        pieChartDraw = drawChart_pie(ctx_pie_draw, getPieChartData(data), pieChartDraw);
+    }
+
+    function draw_pie_winning() {
+        let data = filterData(data3, winning_total_target, 'y', 'x');
+        let result = calculateStatistics(data);
+        document.querySelector('#w_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
+        document.querySelector('#w_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
+        document.querySelector('#w_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
+        pieChartWinning = drawChart_pie(ctx_pie_winning, getPieChartData(data), pieChartWinning);
+    }
+
+    // 生成饼图所需的数据
+    function getPieChartData(data) {
+        // 计算每个数值的出现次数
+        const countMap = data.reduce((acc, value) => {
+            acc[value] = (acc[value] || 0) + 1;
+            return acc;
+        }, {});
+
+        // 转换成数组形式，包含 y 值、count 和概率
+        const probabilities = Object.keys(countMap).map(value => {
+            const count = countMap[value];
+            const probability = (count / data.length) * 100;  // 概率百分比
+            return {
+                y: value,
+                count: count,
+                probability: probability
+            };
+        });
+
+        // 提取 y 值、标签和颜色
+        const yValues = probabilities.map(item => item.count);
+        const labels = probabilities.map(item => `index: ${item.y}`); // 图例只显示 index
+        const colors = probabilities.map(() => getRandomColor());  // 为每个数据点生成随机颜色
+
+        return {
+            labels: labels,
+            datasets: [{
+                label: 'Value Distribution',
+                data: yValues,  // 饼图的数据
+                backgroundColor: colors,  // 随机颜色
+                borderColor: ['#fff'],  // 边框颜色
+                borderWidth: 1,
+                extra: probabilities // 保存每个项目的额外数据（如概率）
+            }]
+        };
+    }
+
+    // 创建饼图
+    function drawChart_pie(ctx, data, chartInstance) {
+        // 销毁旧的图表实例（如果存在）
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        // 创建新的饼图
+        return new Chart(ctx, {
+            type: 'pie', // 图表类型为饼图
+            data: data,
+            options: {
+                plugins: {
+                    legend: {
+                        display: true, // 显示图例
+                        position: 'bottom' // 图例显示位置
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                const datasetIndex = tooltipItem.datasetIndex;
+                                const dataIndex = tooltipItem.dataIndex;
+                                const item = data.datasets[datasetIndex].extra[dataIndex]; // 获取额外的概率数据
+                                return `Count: ${item.count} (P: ${item.probability.toFixed(2)}%)`; // 显示计数和概率
+                            }
+                        }
+                    }
+                },
+                responsive: true, // 响应式设计，自动调整图表大小
+            }
+        });
+    }
+
+    // 随机生成颜色的函数
+    function getRandomColor() {
+        const hue = Math.floor(Math.random() * 360); // 色相
+        const saturation = Math.floor(Math.random() * 21) + 40; // 饱和度 (40%到60%之间)
+        const lightness = Math.floor(Math.random() * 21) + 40; // 亮度 (40%到60%之间)
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // 使用 HSL 色彩模型生成柔和的颜色
     }
 </script>
 

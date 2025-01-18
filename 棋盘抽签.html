@@ -95,7 +95,7 @@
                     <canvas id="scatterChart_tab3" class="dataChart"></canvas>
                     <p>
                         <label onclick="getdata_3_mul(times)" class="lable_clickEnable">目标统计次数：</label>
-                        <input type="number" id="times" class="settings-item-input" value="10" min="1" max="10000">
+                        <input type="number" id="times" class="settings-item-input" value="10" min="1" max="100000">
                     </p>
                     <!-- 目标抽签次数 -->
                     <hr class="divider-line">
@@ -610,6 +610,7 @@
 
     .lable_clickEnable {
         cursor: pointer;
+        display: inline-block;
     }
 
     .lable_clickEnable:active {
@@ -953,7 +954,7 @@
                     },
                     y: {
                         ticks: {
-                            stepSize: 1, // 设置 y 轴间隔为整数
+                            stepSize: p ? undefined : 1, // 设置 y 轴间隔为整数
                             beginAtZero: true, // 从 0 开始
                             callback: function (value) {
                                 if (p) {
@@ -1013,6 +1014,7 @@
             }
         }
     }
+
     // 执行动作
     function performAction_3() {
         // 未达到行动上限
@@ -1061,6 +1063,7 @@
         draw_pie_draw();
         draw_pie_winning();
     }
+
     // 筛选数据
     function filterData(data, targetValue, keyChecked, keySelected) {
         return data.filter(item => item[keyChecked] == targetValue)
@@ -1110,7 +1113,7 @@
         document.querySelector('#d_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#d_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
         // scatterChartDraw = drawChart_scatter("目标抽签数下，中签数概率折现图",ctx_scatterChart_draw, getScatterChartData(data, p), 5, scatterChartDraw, 'line', p);
-        pieChartDraw = drawChart_pie("目标抽签数下，中签概率饼图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
+        pieChartDraw = drawChart_pie("目标抽签数下，中签概率饼状图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
     }
 
     function draw_pie_winning() {
@@ -1120,7 +1123,7 @@
         document.querySelector('#w_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#w_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#w_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        scatterChartWinning = drawChart_scatter("目标中签数下，抽签概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
+        scatterChartWinning = drawChart_scatter("目标中签数下，抽签概率密度分布图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
         // pieChartWinning = drawChart_pie("目标中签数下，抽签数概率饼图",ctx_pieChart_winning, getPieChartData(data), pieChartWinning);
     }
     // 生成气泡图所需的数据
@@ -1203,7 +1206,7 @@
     }
 
     // 创建饼图
-    function drawChart_pie(titleName, ctx, data, chartInstance, type = 'pie', topN = 10) {
+    function drawChart_pie(titleName, ctx, data, chartInstance, type = 'pie', topN = 15) {
         // 销毁旧的图表实例（如果存在）
         if (chartInstance) {
             chartInstance.destroy();
@@ -1216,7 +1219,7 @@
                 plugins: {
                     legend: {
                         display: true, // 显示图例
-                        position: 'bottom',// 图例显示位置
+                        position: 'right',// 图例显示位置
                         labels: {
                             // 自定义显示前topN个图例
                             filter: function (legendItem, chartData) {

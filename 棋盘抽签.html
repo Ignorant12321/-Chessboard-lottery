@@ -1110,7 +1110,7 @@
         document.querySelector('#d_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#d_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
         // scatterChartDraw = drawChart_scatter("目标抽签数下，中签数概率折现图",ctx_scatterChart_draw, getScatterChartData(data, p), 5, scatterChartDraw, 'line', p);
-        pieChartDraw = drawChart_pie("目标抽签数下，中签数概率饼图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
+        pieChartDraw = drawChart_pie("目标抽签数下，中签概率饼图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
     }
 
     function draw_pie_winning() {
@@ -1120,7 +1120,7 @@
         document.querySelector('#w_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#w_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#w_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        scatterChartWinning = drawChart_scatter("目标中签数下，抽签数概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
+        scatterChartWinning = drawChart_scatter("目标中签数下，抽签概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
         // pieChartWinning = drawChart_pie("目标中签数下，抽签数概率饼图",ctx_pieChart_winning, getPieChartData(data), pieChartWinning);
     }
     // 生成气泡图所需的数据

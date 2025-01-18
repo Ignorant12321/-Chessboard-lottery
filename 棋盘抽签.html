@@ -83,7 +83,7 @@
                 </div>
                 <!-- 棋盘分析 -->
                 <div class="tab-content active" id="tab-2">
-                    <h2 id="tab2_header" class="h2_tab" onclick="draw_scatter_tab2(5);">棋盘分析</h2>
+                    <h2 id="tab2_header" class="h2_tab" onclick="draw_scatter_tab2(3);">棋盘分析</h2>
                     <canvas id="scatterChart_tab2" class="dataChart"></canvas>
                 </div>
                 <!-- 棋盘统计 -->
@@ -183,7 +183,7 @@
         // 创建棋盘
         createBoard();
         // 初始化图表
-        draw_scatter_tab2(5);
+        draw_scatter_tab2(3);
         // 初始化权重和行动上限
         firstWeight_element.value = firstWeight;
         secondWeight_element.value = secondWeight;
@@ -769,7 +769,7 @@
     // 窗口显示函数
     function showCustomDialog(head_text = "提示：", p_text = ["暂无信息",]) {
         // 绘制散点图
-        draw_scatter_tab2(5);
+        draw_scatter_tab2(3);
         // 显示弹窗
         dialog_element.style.display = 'flex';
         // 设置文本内容
@@ -878,11 +878,13 @@
     }
     // 修改绘制图表的函数
     function draw_scatter_tab2(radius = 1) {
-        scatterChart_tab2 = drawChart_scatter("“行动次数-中签次数”折线图", ctx_scatterChart_tab2, data2, radius, scatterChart_tab2, 'line');
+        let data = data2;
+        scatterChart_tab2 = drawChart_scatter("“行动次数-中签次数”折线图", ctx_scatterChart_tab2, data, radius, scatterChart_tab2, 'line');
     }
 
     function draw_scatter_tab3(radius = 1) {
-        scatterChart_tab3 = drawChart_scatter("“行动次数-中签次数”散点图", ctx_scatterChart_tab3, data3, radius, scatterChart_tab3);
+        let data = getBubbleChartData(data3);
+        scatterChart_tab3 = drawChart_scatter("“行动次数-中签次数”散点图", ctx_scatterChart_tab3, data, radius, scatterChart_tab3);
     }
     // 创建散点图
     function drawChart_scatter(titleName, ctx, data, radius = 1, scatterChartInstance = null, type = 'scatter', p = false) {
@@ -890,11 +892,11 @@
         if (scatterChartInstance) {
             scatterChartInstance.destroy();
         }
-
         // 创建新的散点图
         return new Chart(ctx, {
             type: type, // 图表类型为默认散点图
             data: {
+                labels: data.map(item => `(${item.x}, ${item.y})`), // x 轴标签
                 datasets: [{
                     data: data,
                     backgroundColor: 'rgba(75, 192, 192, 0.8)', // 点的颜色
@@ -912,15 +914,16 @@
                         callbacks: {
                             // 控制 tooltip 的显示格式
                             label: function (tooltipItem) {
-                                let value = tooltipItem.raw.y; // 获取 y 值
+                                let value = tooltipItem.raw.r !== undefined ? tooltipItem.raw.r : tooltipItem.raw.y;
                                 if (p) {
                                     return 'P: ' + value.toFixed(2) + '%'; // 显示百分比
                                 } else {
-                                    return tooltipItem.raw.x + ': ' + value.toFixed(0); // 显示原始值
+                                    return 'Count: ' + value.toFixed(0); // 显示原始值
                                 }
                             }
                         }
-                    }, title: {
+                    },
+                    title: {
                         display: true,
                         text: titleName,
                         position: 'bottom',
@@ -1120,6 +1123,29 @@
         scatterChartWinning = drawChart_scatter("目标中签数下，抽签数概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
         // pieChartWinning = drawChart_pie("目标中签数下，抽签数概率饼图",ctx_pieChart_winning, getPieChartData(data), pieChartWinning);
     }
+    // 生成气泡图所需的数据
+    function getBubbleChartData(data) {
+        // 遍历数据数组，统计每个 (x, y) 对的次数
+        const countMap = {};
+        data.forEach(item => {
+            const key = `${item.x},${item.y}`; // 使用字符串组合 (x, y) 作为键
+            if (countMap[key]) {
+                countMap[key]++;
+            } else {
+                countMap[key] = 1;
+            }
+        });
+        // 将统计结果转换为气泡图数据点 (x, y, size)
+        return Object.keys(countMap).map(key => {
+            const [x, y] = key.split(','); // 获取 x 和 y 值
+            const size = countMap[key]; // 获取该 (x, y) 对的次数作为气泡大小
+            return {
+                x: parseFloat(x), // x 坐标
+                y: parseFloat(y), // y 坐标
+                r: size // 气泡的大小
+            };
+        });
+    }
 
     // 生成散点图所需的数据
     function getScatterChartData(data, p = false) {
@@ -1132,7 +1158,7 @@
         const totalCount = data.length;
         // 将结果转化为 {x, y} 形式的数组
         return Object.keys(countMap).map(key => {
-            const x = parseInt(key); // x 是数值
+            let x = parseInt(key);
             let y;
             if (p) {
                 y = (countMap[key] / totalCount * 100); // p = true, 计算概率并转为百分比

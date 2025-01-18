@@ -1175,13 +1175,14 @@
 
         const countMap = getScatterChartData(data);
         const probabilities = countMap.map(item => {
-            const probability = (item.y / data.length) * 100;  // 概率百分比
+            let probability = (item.y / data.length) * 100;  // 概率百分比
             return {
                 y: item.x,
                 count: item.y,
                 probability: probability
             };
-        })
+        }).sort((a, b) => b.probability - a.probability);  // 根据 probability 降序排序
+
 
         // 提取 y 值、标签和颜色
         const yValues = probabilities.map(item => item.count);
@@ -1202,7 +1203,7 @@
     }
 
     // 创建饼图
-    function drawChart_pie(titleName, ctx, data, chartInstance, type = 'pie') {
+    function drawChart_pie(titleName, ctx, data, chartInstance, type = 'pie', topN = 10) {
         // 销毁旧的图表实例（如果存在）
         if (chartInstance) {
             chartInstance.destroy();
@@ -1215,7 +1216,13 @@
                 plugins: {
                     legend: {
                         display: true, // 显示图例
-                        position: 'bottom' // 图例显示位置
+                        position: 'bottom',// 图例显示位置
+                        labels: {
+                            // 自定义显示前topN个图例
+                            filter: function (legendItem, chartData) {
+                                return chartData.labels.indexOf(legendItem.text) < topN;
+                            }
+                        },
                     },
                     tooltip: {
                         callbacks: {
@@ -1223,7 +1230,7 @@
                                 const datasetIndex = tooltipItem.datasetIndex;
                                 const dataIndex = tooltipItem.dataIndex;
                                 const item = data.datasets[datasetIndex].extra[dataIndex]; // 获取额外的概率数据
-                                return `Probability: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%)`; // 显示计数和概率
+                                return `Probability: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%`; // 显示计数和概率
                             }
                         }
                     },

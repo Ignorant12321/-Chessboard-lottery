@@ -916,7 +916,7 @@
                             label: function (tooltipItem) {
                                 let value = tooltipItem.raw.r !== undefined ? tooltipItem.raw.r : tooltipItem.raw.y;
                                 if (p) {
-                                    return 'P: ' + value.toFixed(2) + '%'; // 显示百分比
+                                    return 'P: ' + (value % 1 === 0 ? value.toFixed(1) : parseFloat(value.toFixed(4))) + '%';   // 显示百分比，自动省略小数点后无意义的零（至少保留一位小数）
                                 } else {
                                     return 'Count: ' + value.toFixed(0); // 显示原始值
                                 }
@@ -1223,7 +1223,7 @@
                                 const datasetIndex = tooltipItem.datasetIndex;
                                 const dataIndex = tooltipItem.dataIndex;
                                 const item = data.datasets[datasetIndex].extra[dataIndex]; // 获取额外的概率数据
-                                return `Count: ${item.count} (P: ${item.probability.toFixed(2)}%)`; // 显示计数和概率
+                                return `Count: ${item.count} (P: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%)`; // 显示计数和概率
                             }
                         }
                     },

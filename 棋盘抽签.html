@@ -1223,7 +1223,7 @@
                                 const datasetIndex = tooltipItem.datasetIndex;
                                 const dataIndex = tooltipItem.dataIndex;
                                 const item = data.datasets[datasetIndex].extra[dataIndex]; // 获取额外的概率数据
-                                return `Count: ${item.count} (P: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%)`; // 显示计数和概率
+                                return `Probability: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%)`; // 显示计数和概率
                             }
                         }
                     },

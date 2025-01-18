@@ -83,28 +83,29 @@
                 </div>
                 <!-- 棋盘分析 -->
                 <div class="tab-content active" id="tab-2">
-                    <h2 id="tab2_header" class="h2_tab" onclick="draw_scatter_tab2(2);">棋盘分析</h2>
+                    <h2 id="tab2_header" class="h2_tab" onclick="draw_scatter_tab2(5);">棋盘分析</h2>
                     <canvas id="scatterChart_tab2" class="dataChart"></canvas>
                 </div>
                 <!-- 棋盘统计 -->
                 <div class="tab-content" id="tab-3">
-                    <h2 id="tab3_header" class="h2_tab" onclick="get_data_3_mul(times)">棋盘统计</h2>
+                    <h2 id="tab3_header" class="h2_tab" onclick="getdata_3_mul(times)">棋盘统计</h2>
                     <!-- 目标统计次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
+                    <canvas id="scatterChart_tab3" class="dataChart"></canvas>
                     <p>
-                        <label onclick="get_data_3_mul(times)" class="lable_clickEnable">目标统计次数：</label>
+                        <label onclick="getdata_3_mul(times)" class="lable_clickEnable">目标统计次数：</label>
                         <input type="number" id="times" class="settings-item-input" value="10" min="1" max="10000">
                     </p>
-                    <canvas id="scatterChart_tab3" class="dataChart"></canvas>
                     <!-- 目标抽签次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
+                    <!-- <canvas id="scatterChart_draw" class="dataChart"></canvas> -->
+                    <canvas id="pieChart_draw" class="dataChart"></canvas>
                     <p>
                         <label onclick="draw_pie_draw()" class="lable_clickEnable">目标抽签次数：</label>
                         <input type="number" id="draw_total" class="settings-item-input" value="28" min="1" max="250">
                     </p>
-                    <canvas id="pieChart_draw" class="dataChart"></canvas>
                     <p id="draw_total_result_p" class="result_p">
                         <span id="d_min">🔷最小值: ？？？&nbsp;</span>
                         <span id="d_median">⚖️中位数: ？？？&nbsp;</span>
@@ -113,11 +114,12 @@
                     <!-- 目标中签次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
+                    <canvas id="scatterChart_winning" class="dataChart"></canvas>
+                    <!-- <canvas id="pieChart_winning" class="dataChart"></canvas> -->
                     <p>
                         <label onclick="draw_pie_winning()" class="lable_clickEnable">目标中签次数：</label>
                         <input type="number" id="winning_total" class="settings-item-input" value="19" min="1" max="25">
                     </p>
-                    <canvas id="pieChart_winning" class="dataChart"></canvas>
                     <p id="winning_total_result_p" class="result_p">
                         <span id="w_min">🔷最小值: ？？？&nbsp;</span>
                         <span id="w_median">⚖️中位数: ？？？&nbsp;</span>
@@ -181,7 +183,7 @@
         // 创建棋盘
         createBoard();
         // 初始化图表
-        draw_scatter_tab2();
+        draw_scatter_tab2(5);
         // 初始化权重和行动上限
         firstWeight_element.value = firstWeight;
         secondWeight_element.value = secondWeight;
@@ -433,7 +435,7 @@
             // 根据选项卡ID执行相应操作
             if (tabId === 'tab-3') {
                 if (loaded_first) {
-                    get_data_3_mul(times);
+                    getdata_3_mul(times);
                     loaded_first = false;
                 }
             } else if (tabId === 'tab-4') {
@@ -767,7 +769,7 @@
     // 窗口显示函数
     function showCustomDialog(head_text = "提示：", p_text = ["暂无信息",]) {
         // 绘制散点图
-        draw_scatter_tab2(2);
+        draw_scatter_tab2(5);
         // 显示弹窗
         dialog_element.style.display = 'flex';
         // 设置文本内容
@@ -849,10 +851,6 @@
     let data2 = [];
     let data3 = [];         // 棋盘数组(首次抽中的记录点
     let data3_full = [];    // 棋盘数组（全部记录点）
-    let ctx2 = document.getElementById('scatterChart_tab2').getContext('2d');
-    let ctx3 = document.getElementById('scatterChart_tab3').getContext('2d');
-    let scatterChart_tab2 = null;   // 使用局部变量来存储散点图的实例
-    let scatterChart_tab3 = null;
 
     // 初始化数据
     function init_data2() {
@@ -880,21 +878,22 @@
     }
     // 修改绘制图表的函数
     function draw_scatter_tab2(radius = 1) {
-        scatterChart_tab2 = drawChart_scatter(ctx2, data2, radius, scatterChart_tab2);
+        scatterChart_tab2 = drawChart_scatter("“行动次数-中签次数”折线图", ctx_scatterChart_tab2, data2, radius, scatterChart_tab2, 'line');
     }
 
     function draw_scatter_tab3(radius = 1) {
-        scatterChart_tab3 = drawChart_scatter(ctx3, data3, radius, scatterChart_tab3);
+        scatterChart_tab3 = drawChart_scatter("“行动次数-中签次数”散点图", ctx_scatterChart_tab3, data3, radius, scatterChart_tab3);
     }
     // 创建散点图
-    function drawChart_scatter(ctx, data, radius = 1, scatterChartInstance = null) {
+    function drawChart_scatter(titleName, ctx, data, radius = 1, scatterChartInstance = null, type = 'scatter', p = false) {
         // 销毁旧的图表实例（如果存在）
         if (scatterChartInstance) {
             scatterChartInstance.destroy();
         }
+
         // 创建新的散点图
         return new Chart(ctx, {
-            type: 'scatter', // 图表类型为散点图
+            type: type, // 图表类型为默认散点图
             data: {
                 datasets: [{
                     data: data,
@@ -908,7 +907,32 @@
                 plugins: {
                     legend: {
                         display: false // 隐藏图例
-                    }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            // 控制 tooltip 的显示格式
+                            label: function (tooltipItem) {
+                                let value = tooltipItem.raw.y; // 获取 y 值
+                                if (p) {
+                                    return 'P: ' + value.toFixed(2) + '%'; // 显示百分比
+                                } else {
+                                    return tooltipItem.raw.x + ': ' + value.toFixed(0); // 显示原始值
+                                }
+                            }
+                        }
+                    }, title: {
+                        display: true,
+                        text: titleName,
+                        position: 'bottom',
+                        font: {
+                            size: 16,
+                            weight: 'bold',
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
                 },
                 responsive: true, // 响应式设计，自动调整图表大小
                 scales: {
@@ -919,17 +943,33 @@
                             color: 'rgba(0, 0, 0, 0.1)', // 网格线颜色
                             lineWidth: 1
                         },
+                        ticks: {
+                            stepSize: 1, // 设置 x 轴间隔为整数
+                            beginAtZero: true // 从 0 开始
+                        }
                     },
                     y: {
+                        ticks: {
+                            stepSize: 1, // 设置 y 轴间隔为整数
+                            beginAtZero: true, // 从 0 开始
+                            callback: function (value) {
+                                if (p) {
+                                    return value.toFixed(2) + '%'; // 如果 p 为 true，显示百分比
+                                } else {
+                                    return value.toFixed(0); // 否则显示原始值（整数）
+                                }
+                            }
+                        },
                         grid: {
                             color: 'rgba(0, 0, 0, 0.1)', // 网格线颜色
                             lineWidth: 1
-                        },
+                        }
                     }
                 }
             }
         });
     }
+
     // 赞助支持
     const sponsorImg_element = document.getElementById('sponsorImg');
     const sponsorImg_p_element = document.getElementById('sponsorImg_p');
@@ -1009,7 +1049,7 @@
             performAction_3();
         }
     }
-    function get_data_3_mul(times = 10) {
+    function getdata_3_mul(times = 10) {
         init_data3();
         for (let i = 0; i < times; i++) {
             get_data_3();
@@ -1045,47 +1085,77 @@
 
 <!-- 创建饼图 -->
 <script>
+    // 存储散点图的实例
+    let scatterChart_tab2 = null;
+    let scatterChart_tab3 = null;
     let pieChartDraw = null;
-    let pieChartWinning = null;
-    const ctx_pie_draw = document.getElementById('pieChart_draw').getContext('2d');
-    const ctx_pie_winning = document.getElementById('pieChart_winning').getContext('2d');
+    let scatterChartWinning = null;
+    // let pieChartWinning = null;
+    // let scatterChartDraw = null;
+    const ctx_scatterChart_tab2 = document.getElementById('scatterChart_tab2').getContext('2d');
+    const ctx_scatterChart_tab3 = document.getElementById('scatterChart_tab3').getContext('2d');
+    const ctx_pieChart_draw = document.getElementById('pieChart_draw').getContext('2d');
+    const ctx_scatterChart_winning = document.getElementById('scatterChart_winning').getContext('2d');
+    // const ctx_pieChart_winning = document.getElementById('pieChart_winning').getContext('2d');
+    // const ctx_scatterChart_draw = document.getElementById('scatterChart_draw').getContext('2d');
 
     function draw_pie_draw() {
+        let p = true;
         let data = filterData(data3_full, draw_total_target, 'x', 'y');
         let result = calculateStatistics(data);
         document.querySelector('#d_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#d_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#d_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        pieChartDraw = drawChart_pie(ctx_pie_draw, getPieChartData(data), pieChartDraw);
+        // scatterChartDraw = drawChart_scatter("目标抽签数下，中签数概率折现图",ctx_scatterChart_draw, getScatterChartData(data, p), 5, scatterChartDraw, 'line', p);
+        pieChartDraw = drawChart_pie("目标抽签数下，中签数概率饼图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
     }
 
     function draw_pie_winning() {
+        let p = true;
         let data = filterData(data3, winning_total_target, 'y', 'x');
         let result = calculateStatistics(data);
         document.querySelector('#w_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#w_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#w_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        pieChartWinning = drawChart_pie(ctx_pie_winning, getPieChartData(data), pieChartWinning);
+        scatterChartWinning = drawChart_scatter("目标中签数下，抽签数概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
+        // pieChartWinning = drawChart_pie("目标中签数下，抽签数概率饼图",ctx_pieChart_winning, getPieChartData(data), pieChartWinning);
     }
+
+    // 生成散点图所需的数据
+    function getScatterChartData(data, p = false) {
+        // 统计每个值的出现次数
+        const countMap = {};
+        data.forEach(item => {
+            countMap[item] = (countMap[item] || 0) + 1;
+        });
+        // 计算数据总长度
+        const totalCount = data.length;
+        // 将结果转化为 {x, y} 形式的数组
+        return Object.keys(countMap).map(key => {
+            const x = parseInt(key); // x 是数值
+            let y;
+            if (p) {
+                y = (countMap[key] / totalCount * 100); // p = true, 计算概率并转为百分比
+            } else {
+                y = countMap[key];  // p = false, 计算出现次数
+            }
+            return { x, y }; // 返回 {x, y}
+        });
+    }
+
 
     // 生成饼图所需的数据
     function getPieChartData(data) {
-        // 计算每个数值的出现次数
-        const countMap = data.reduce((acc, value) => {
-            acc[value] = (acc[value] || 0) + 1;
-            return acc;
-        }, {});
 
-        // 转换成数组形式，包含 y 值、count 和概率
-        const probabilities = Object.keys(countMap).map(value => {
-            const count = countMap[value];
-            const probability = (count / data.length) * 100;  // 概率百分比
+        const countMap = getScatterChartData(data);
+        const probabilities = countMap.map(item => {
+            const probability = (item.y / data.length) * 100;  // 概率百分比
             return {
-                y: value,
-                count: count,
+                y: item.x,
+                count: item.y,
                 probability: probability
             };
-        });
+        })
 
         // 提取 y 值、标签和颜色
         const yValues = probabilities.map(item => item.count);
@@ -1106,14 +1176,14 @@
     }
 
     // 创建饼图
-    function drawChart_pie(ctx, data, chartInstance) {
+    function drawChart_pie(titleName, ctx, data, chartInstance, type = 'pie') {
         // 销毁旧的图表实例（如果存在）
         if (chartInstance) {
             chartInstance.destroy();
         }
         // 创建新的饼图
         return new Chart(ctx, {
-            type: 'pie', // 图表类型为饼图
+            type: type, // 图表类型默认为饼图
             data: data,
             options: {
                 plugins: {
@@ -1130,7 +1200,20 @@
                                 return `Count: ${item.count} (P: ${item.probability.toFixed(2)}%)`; // 显示计数和概率
                             }
                         }
-                    }
+                    },
+                    title: {
+                        display: true,
+                        text: titleName,
+                        position: 'bottom',
+                        font: {
+                            size: 16,
+                            weight: 'bold',
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
                 },
                 responsive: true, // 响应式设计，自动调整图表大小
             }

@@ -888,11 +888,21 @@
         scatterChart_tab3 = drawChart_scatter("“行动次数-中签次数”散点图", ctx_scatterChart_tab3, data, radius, scatterChart_tab3);
     }
     // 创建散点图
-    function drawChart_scatter(titleName, ctx, data, radius = 1, scatterChartInstance = null, type = 'scatter', p = false) {
+    function drawChart_scatter(titleName, ctx, data, radius = 1, scatterChartInstance = null, type = 'scatter') {
         // 销毁旧的图表实例（如果存在）
         if (scatterChartInstance) {
             scatterChartInstance.destroy();
         }
+        let p = true ? type == 'bar' : false;
+        // 如果需要概率累加，预处理数据
+        if (p) {
+            let totalProbability = 0;
+            data.forEach(item => {
+                totalProbability += item.y; // 假设 y 表示概率
+                item.accumulatedProbability = totalProbability; // 为每个点添加累积概率字段
+            });
+        }
+
         // 创建新的散点图
         return new Chart(ctx, {
             type: type, // 图表类型为默认散点图
@@ -912,14 +922,33 @@
                         display: false // 隐藏图例
                     },
                     tooltip: {
+                        displayColors: p ? false : true,// 如果是密度图则隐藏图例
                         callbacks: {
                             // 控制 tooltip 的显示格式
+                            title: function (context) {
+                                let label = context[0].label; // 获取 x 标签
+                                if (type == 'scatter') {
+                                    return label;
+                                }
+                                else {
+                                    return `Index: ${label}`; // 返回自定义标题
+                                }
+                            },
                             label: function (tooltipItem) {
-                                let value = tooltipItem.raw.r !== undefined ? tooltipItem.raw.r : tooltipItem.raw.y;
-                                if (p) {
-                                    return 'P: ' + (value % 1 === 0 ? value.toFixed(1) : parseFloat(value.toFixed(4))) + '%';   // 显示百分比，自动省略小数点后无意义的零（至少保留一位小数）
-                                } else {
-                                    return 'Count: ' + value.toFixed(0); // 显示原始值
+                                if (type == 'bar') {
+                                    // 显示概率和累加概率
+                                    let accumulatedProbability = tooltipItem.raw.accumulatedProbability;
+                                    let value = tooltipItem.raw.y;
+                                    return [`🌟P: ${(value % 1 === 0 ? value.toFixed(1) : parseFloat(value.toFixed(4)))}%`,
+                                    `🎡ACC: ${(accumulatedProbability % 1 === 0 ? accumulatedProbability.toFixed(1) : parseFloat(accumulatedProbability.toFixed(4)))}%`];
+                                } else if (type == 'line') {
+                                    // 显示中签次数
+                                    let value = tooltipItem.raw.y;
+                                    return 'Total: ' + value.toFixed(0);
+                                } else if (type == 'scatter') {
+                                    // 显示重复次数
+                                    let value = tooltipItem.raw.r;
+                                    return 'Count: ' + value.toFixed(0);
                                 }
                             }
                         }
@@ -973,6 +1002,8 @@
             }
         });
     }
+
+
 
     // 赞助支持
     const sponsorImg_element = document.getElementById('sponsorImg');
@@ -1106,24 +1137,22 @@
     // const ctx_scatterChart_draw = document.getElementById('scatterChart_draw').getContext('2d');
 
     function draw_pie_draw() {
-        let p = true;
         let data = filterData(data3_full, draw_total_target, 'x', 'y');
         let result = calculateStatistics(data);
         document.querySelector('#d_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#d_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#d_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        // scatterChartDraw = drawChart_scatter("目标抽签数下，中签数概率折现图",ctx_scatterChart_draw, getScatterChartData(data, p), 5, scatterChartDraw, 'line', p);
+        // scatterChartDraw = drawChart_scatter("目标抽签数下，中签数概率折线图",ctx_scatterChart_draw, getScatterChartData(data, p), 5, scatterChartDraw, 'line');
         pieChartDraw = drawChart_pie("目标抽签数下，中签概率饼状图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
     }
 
     function draw_pie_winning() {
-        let p = true;
         let data = filterData(data3, winning_total_target, 'y', 'x');
         let result = calculateStatistics(data);
         document.querySelector('#w_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#w_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#w_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        scatterChartWinning = drawChart_scatter("目标中签数下，抽签概率密度分布图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar', p);
+        scatterChartWinning = drawChart_scatter("目标中签数下，抽签概率密度分布图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar');
         // pieChartWinning = drawChart_pie("目标中签数下，抽签数概率饼图",ctx_pieChart_winning, getPieChartData(data), pieChartWinning);
     }
     // 生成气泡图所需的数据

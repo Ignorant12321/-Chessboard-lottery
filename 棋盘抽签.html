@@ -83,7 +83,7 @@
                 </div>
                 <!-- 棋盘分析 -->
                 <div class="tab-content active" id="tab-2">
-                    <h2 id="tab2_header" class="h2_tab" onclick="draw_scatter_tab2(3);">棋盘分析</h2>
+                    <h2 id="tab2_header" class="h2_tab" onclick="drawChart_scatter_tab2(3);">棋盘分析</h2>
                     <canvas id="scatterChart_tab2" class="dataChart"></canvas>
                 </div>
                 <!-- 棋盘统计 -->
@@ -100,10 +100,9 @@
                     <!-- 目标抽签次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
-                    <!-- <canvas id="scatterChart_draw" class="dataChart"></canvas> -->
                     <canvas id="pieChart_draw" class="dataChart"></canvas>
                     <p>
-                        <label onclick="draw_pie_draw()" class="lable_clickEnable">目标抽签次数：</label>
+                        <label onclick="drawChart_pie_draw()" class="lable_clickEnable">目标抽签次数：</label>
                         <input type="number" id="draw_total" class="settings-item-input" value="28" min="1" max="250">
                     </p>
                     <p id="draw_total_result_p" class="result_p">
@@ -115,9 +114,8 @@
                     <hr class="divider-line">
                     <hr class="divider-line">
                     <canvas id="scatterChart_winning" class="dataChart"></canvas>
-                    <!-- <canvas id="pieChart_winning" class="dataChart"></canvas> -->
                     <p>
-                        <label onclick="draw_pie_winning()" class="lable_clickEnable">目标中签次数：</label>
+                        <label onclick="drawChart_pie_winning()" class="lable_clickEnable">目标中签次数：</label>
                         <input type="number" id="winning_total" class="settings-item-input" value="19" min="1" max="25">
                     </p>
                     <p id="winning_total_result_p" class="result_p">
@@ -151,6 +149,7 @@
     const rows = 5; // 行数
     const cols = 5; // 列数
     let board = []; // 棋盘数组
+    let weights = []; // 权重数组
 
     let drawnCount = 0; // 抽中的次数
     let currentActions = 0; // 当前抽取的次数
@@ -179,11 +178,9 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         // 初始化数据
-        init_data2();
-        // 创建棋盘
-        createBoard();
+        resetBoard();
         // 初始化图表
-        draw_scatter_tab2(3);
+        drawChart_scatter_tab2(3);
         // 初始化权重和行动上限
         firstWeight_element.value = firstWeight;
         secondWeight_element.value = secondWeight;
@@ -310,7 +307,7 @@
                 showCustomDialog(head_text = "恭喜：", p_text = ["所有方格已翻转！",]);
                 return;
             } else {
-                data2_push(currentActions, rows * cols);
+                data2_push(currentActions, totalCells);
                 revealAllCells();
                 showCustomDialog(head_text = "提示：", p_text = ["行动次数已达到上限,", "已强制翻转所有所有格子！",]);
                 return;
@@ -324,11 +321,10 @@
 
     // 选择一个单元格
     function selectCell(array) {
-        let weights = [];
-
+        weights = [];
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
-                weights.push(array[i][j] === 0 ? firstWeight : secondWeight); // 权重计算
+                weights.push(array[i][j] === 0 ? firstWeight : secondWeight);
             }
         }
 
@@ -357,13 +353,13 @@
                 }
             }
         }
-        drawnCount = rows * cols;
+        drawnCount = totalCells;
         updateStats(); // 更新统计信息
     }
 
     // 检测是否所有方格都被翻转
     function checkAllCellsRevealed(count) {
-        if (count == rows * cols) {
+        if (count == totalCells) {
             return true;
         } else {
             return false;
@@ -770,7 +766,7 @@
     // 窗口显示函数
     function showCustomDialog(head_text = "提示：", p_text = ["暂无信息",]) {
         // 绘制散点图
-        draw_scatter_tab2(3);
+        drawChart_scatter_tab2(3);
         // 显示弹窗
         dialog_element.style.display = 'flex';
         // 设置文本内容
@@ -852,6 +848,7 @@
     let data2 = [];
     let data3 = [];         // 棋盘数组(首次抽中的记录点
     let data3_full = [];    // 棋盘数组（全部记录点）
+    let data3_endPoint = [];    // 棋盘数组（提前结束点）
 
     // 初始化数据
     function init_data2() {
@@ -861,6 +858,7 @@
     }
     function init_data3() {
         data3 = [];
+        data3_endPoint = [];
         data3.push({ x: 0, y: 0 },);
         data3_full = [];
         data3_full.push({ x: 0, y: 0 },);
@@ -877,13 +875,16 @@
     function data3_full_push(xValue = 0, yValue = 0) {
         data3_full.push({ x: xValue, y: yValue },);
     }
+    function data3_endPoint_push(value) {
+        data3_endPoint.push(value);
+    }
     // 修改绘制图表的函数
-    function draw_scatter_tab2(radius = 1) {
+    function drawChart_scatter_tab2(radius = 1) {
         let data = data2;
         scatterChart_tab2 = drawChart_scatter("“行动次数-中签次数”折线图", ctx_scatterChart_tab2, data, radius, scatterChart_tab2, 'line');
     }
 
-    function draw_scatter_tab3(radius = 1) {
+    function drawChart_scatter_tab3(radius = 1) {
         let data = getBubbleChartData(data3);
         scatterChart_tab3 = drawChart_scatter("“行动次数-中签次数”散点图", ctx_scatterChart_tab3, data, radius, scatterChart_tab3);
     }
@@ -1032,11 +1033,13 @@
 </script>
 <!-- 棋盘统计 -->
 <script>
+    // 定义多次统计的棋盘变量
     let flag_end = false;
     let board_3 = []; // 棋盘数组
     let drawnCount_3 = 0; // 抽中的次数
     let currentActions_3 = 0; // 当前抽取的次数
-    // 创建棋盘
+
+    // 创建多次统计的棋盘
     function createBoard_3() {
         for (let i = 0; i < rows; i++) {
             board_3[i] = [];
@@ -1062,11 +1065,12 @@
                 data3_push(currentActions_3, drawnCount_3);
             }
             if (checkAllCellsRevealed(drawnCount_3)) {
+                data3_endPoint_push(currentActions_3);
                 flag_end = true;
             }
         } else if (currentActions_3 >= maxActions) {
-            data3_push(currentActions_3, rows * cols);
-            data3_full_push(currentActions_3, drawnCount_3);
+            data3_push(currentActions_3, totalCells);
+            data3_full_push(currentActions_3, totalCells);
             flag_end = true;
         }
     }
@@ -1090,15 +1094,29 @@
         for (let i = 0; i < times; i++) {
             get_data_3();
         }
-        draw_scatter_tab3();
-        draw_pie_draw();
-        draw_pie_winning();
+        drawChart_scatter_tab3();
+        drawChart_pie_draw();
+        drawChart_pie_winning();
     }
 
     // 筛选数据
     function filterData(data, targetValue, keyChecked, keySelected) {
         return data.filter(item => item[keyChecked] == targetValue)
             .map(item => item[keySelected]);
+    }
+    // 补充数据
+    function supplementData_draw(data, targetValue) {
+        data3_endPoint.forEach(value => {
+            if (targetValue > value) {
+                data.push(totalCells);
+            }
+        });
+    }
+    function supplementData_winning(data, targetValue) {
+        let supplementCount = targetValue - data.length;
+        for (let i = 0; i < supplementCount; i++) {
+            data.push(maxActions);
+        }
     }
     // 统计信息
     function calculateStatistics(data) {
@@ -1125,35 +1143,31 @@
     // 存储散点图的实例
     let scatterChart_tab2 = null;
     let scatterChart_tab3 = null;
-    let pieChartDraw = null;
-    let scatterChartWinning = null;
-    // let pieChartWinning = null;
-    // let scatterChartDraw = null;
+    let pieChart_draw = null;
+    let scatterChart_winning = null;
     const ctx_scatterChart_tab2 = document.getElementById('scatterChart_tab2').getContext('2d');
     const ctx_scatterChart_tab3 = document.getElementById('scatterChart_tab3').getContext('2d');
     const ctx_pieChart_draw = document.getElementById('pieChart_draw').getContext('2d');
     const ctx_scatterChart_winning = document.getElementById('scatterChart_winning').getContext('2d');
-    // const ctx_pieChart_winning = document.getElementById('pieChart_winning').getContext('2d');
-    // const ctx_scatterChart_draw = document.getElementById('scatterChart_draw').getContext('2d');
 
-    function draw_pie_draw() {
+    function drawChart_pie_draw() {
         let data = filterData(data3_full, draw_total_target, 'x', 'y');
+        supplementData_draw(data, draw_total_target);
         let result = calculateStatistics(data);
         document.querySelector('#d_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#d_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#d_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        // scatterChartDraw = drawChart_scatter("目标抽签数下，中签数概率折线图",ctx_scatterChart_draw, getScatterChartData(data, p), 5, scatterChartDraw, 'line');
-        pieChartDraw = drawChart_pie("目标抽签数下，中签概率饼状图", ctx_pieChart_draw, getPieChartData(data), pieChartDraw);
+        pieChart_draw = drawChart_pie("目标抽签数下，中签概率饼状图", ctx_pieChart_draw, getPieChartData(data), pieChart_draw);
     }
 
-    function draw_pie_winning() {
+    function drawChart_pie_winning() {
         let data = filterData(data3, winning_total_target, 'y', 'x');
+        supplementData_winning(data, times);
         let result = calculateStatistics(data);
         document.querySelector('#w_min').innerHTML = `🔷最小值：${result.min}&nbsp;`;
         document.querySelector('#w_median').innerHTML = `⚖️中位数：${result.median}&nbsp;`;
         document.querySelector('#w_max').innerHTML = `🔶最大值：${result.max}&nbsp;`;
-        scatterChartWinning = drawChart_scatter("目标中签数下，抽签概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChartWinning, 'bar');
-        // pieChartWinning = drawChart_pie("目标中签数下，抽签数概率饼图",ctx_pieChart_winning, getPieChartData(data), pieChartWinning);
+        scatterChart_winning = drawChart_scatter("目标中签数下，抽签概率密度图", ctx_scatterChart_winning, getScatterChartData(data, p = true), 5, scatterChart_winning, 'bar');
     }
     // 生成气泡图所需的数据
     function getBubbleChartData(data) {
@@ -1262,7 +1276,7 @@
                                 const datasetIndex = tooltipItem.datasetIndex;
                                 const dataIndex = tooltipItem.dataIndex;
                                 const item = data.datasets[datasetIndex].extra[dataIndex]; // 获取额外的概率数据
-                                return `Probability: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%`; // 显示计数和概率
+                                return `Probability: ${(item.probability % 1 === 0 ? item.probability.toFixed(1) : parseFloat(item.probability.toFixed(4)))}%`;
                             }
                         }
                     },

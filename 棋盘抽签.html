@@ -10,7 +10,7 @@
 <body>
     <div id="bodyContainer">
         <!-- 标题 -->
-        <h1 id="title1">
+        <h1 id="title1" class="title">
             <span>棋</span>
             <span>盘</span>
             <span>抽</span>
@@ -48,7 +48,7 @@
             <br>
         </div>
         <!-- 标题 -->
-        <h1 id="title2">
+        <h1 id="title2" class="title">
             <span>棋</span>
             <span>盘</span>
             <span>分</span>
@@ -443,7 +443,7 @@
 
 <style>
     /* 标题样式 */
-    #title {
+    .title {
         width: 60%;
         max-width: 600px;
         font-size: 32px;
@@ -459,18 +459,18 @@
         text-align: center;
     }
 
-    #title:hover {
+    .title:hover {
         background: linear-gradient(to right, #ddd, #f0f0f0);
         transform: translateY(-4px);
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    #title span {
+    .title span {
         display: inline-block;
         transition: transform 0.3s ease;
     }
 
-    #title span:hover {
+    .title span:hover {
         transform: scale(1.5);
     }
 

@@ -16,6 +16,7 @@
             <span>抽</span>
             <span>签</span>
         </h1>
+
         <div id="h1Container_1" class="h1Container">
             <br>
             <div class="h1ContainerItem">
@@ -23,32 +24,38 @@
                     <!-- 动态生成表格 -->
                 </table>
             </div>
+
             <div class="h1ContainerItem">
                 <button id="action-btn" class="controlButton"
                     onclick="performAction();lineChart_Slider_update();">行动</button>
                 <button id="reset-btn" class="controlButton"
                     onclick="resetBoard();lineChart_Slider_reset();">重置</button>
             </div>
+
             <div class="h1ContainerItem" style="display: block;">
                 <p class="p-left">🎯【抽中次数：<label id="drawn-count">0</label>】</p>
                 <p class="p-left">🎲【抽取次数：<label id="current-actions">0</label>】</p>
-                <p class="p-left">✈️【进度：<label id="progress-value">0.00%</label>】</p>
+                <p class="p-left">✈️【进度：<label id="progress-value">0%</label>】</p>
             </div>
+
             <div class="h1ContainerItem">
                 <div class="progress-container">
-                    <div id="progressBar"></div>
-                    <div class="progress-points">
-                        <div class="point" style="left: 1%">1</div>
-                        <div class="point" style="left: 14%">5</div>
-                        <div class="point" style="left: 34%">10</div>
-                        <div class="point" style="left: 54%">15</div>
-                        <div class="point" style="left: 74%">20</div>
-                        <div class="point" style="left: 94%">25</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-marks">
+                        <div class="mark" data-value="1">1</div>
+                        <div class="mark" data-value="5">5</div>
+                        <div class="mark" data-value="10">10</div>
+                        <div class="mark" data-value="15">15</div>
+                        <div class="mark" data-value="20">20</div>
+                        <div class="mark" data-value="25">25</div>
+                        <div class="mark-line"></div>
                     </div>
                 </div>
             </div>
-            <br>
         </div>
+
         <!-- 标题 -->
         <h1 id="title2" class="title">
             <span>棋</span>
@@ -64,9 +71,11 @@
                 <div class="tab-button" data-tab="tab-3">📈&nbsp;统计</div>
                 <div class="tab-button" data-tab="tab-4">🍨&nbsp;赞助</div>
             </div>
+
             <!-- 选项卡内容区域 -->
-            <!-- 设置选项 -->
             <div id="tab-content-container">
+
+                <!-- 设置选项 -->
                 <div class="tab-content" id="tab-1">
                     <h2 id="tab1_header" class="h2_tab" onclick="resetBoard();">设置选项</h2>
                     <p>
@@ -83,6 +92,7 @@
                     </p>
                     <p class="p_small">（重置使能设置，行动失能设置）</p>
                 </div>
+
                 <!-- 棋盘分析 -->
                 <div class="tab-content active" id="tab-2">
                     <h2 id="tab2_header" class="h2_tab" onclick="drawChart_line();">棋盘分析</h2>
@@ -92,9 +102,11 @@
                         <span id="lineChart_sliderTooltip" class="sliderTooltip">0</span>
                     </div>
                 </div>
+
                 <!-- 棋盘统计 -->
                 <div class="tab-content" id="tab-3">
                     <h2 id="tab3_header" class="h2_tab" onclick="getdata_3_mul(times)">棋盘统计</h2>
+
                     <!-- 目标统计次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
@@ -103,6 +115,7 @@
                         <label onclick="getdata_3_mul(times)" class="lable_clickEnable">目标统计次数：</label>
                         <input type="number" id="times" class="settings-item-input" value="10" min="1" max="100000">
                     </p>
+
                     <!-- 目标抽签次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
@@ -121,6 +134,7 @@
                         <span id="d_median">⚖️中位数: ？？？&nbsp;</span>
                         <span id="d_max">🔶最大值: ？？？</span>
                     </p>
+
                     <!-- 目标中签次数 -->
                     <hr class="divider-line">
                     <hr class="divider-line">
@@ -142,6 +156,7 @@
                     <hr class="divider-line">
                     <hr class="divider-line">
                 </div>
+
                 <!-- 版权申明 -->
                 <div class="tab-content" id="tab-4">
                     <h2 id="tab4_header" class="h2_tab" onclick="toggle_sponsorImg()">版权申明</h2>
@@ -158,6 +173,7 @@
             </div>
         </div>
 </body>
+
 <script>
 
     let loaded_first = true;
@@ -220,6 +236,8 @@
         })
         draw_total_element.addEventListener('input', function () {
             draw_total_target = parseInt(this.value); // 更新目标抽签数量
+            pieChart_slider_element.value = draw_total_target;  // 更新滑动条
+
             drawChart_pie();// 更新饼状图
         });
         pieChart_slider_element.addEventListener('input', function () {
@@ -228,6 +246,7 @@
         });
         winning_total_element.addEventListener('input', function () {
             winning_total_target = parseInt(this.value); // 更新目标抽中数量
+            densityChart_slider_element.value = winning_total_target;  // 更新滑动条
             drawChart_density();// 更新密度图
         });
         densityChart_slider_element.addEventListener('input', function () {
@@ -253,21 +272,6 @@
             tab4Button.textContent = '🍨';
         }
     });
-    // 启用和禁用设置项
-    function enableSettings() {
-        firstWeight_element.disabled = false;
-        secondWeight_element.disabled = false;
-        maxActions_element.disabled = false;
-        settingsEnabled = true;
-    }
-    function disableSettings() {
-        if (settingsEnabled) {
-            firstWeight_element.disabled = true;
-            secondWeight_element.disabled = true;
-            maxActions_element.disabled = true;
-            settingsEnabled = false;
-        }
-    }
 
     // 创建棋盘
     const table = document.getElementById("chessboard");
@@ -404,25 +408,12 @@
     }
     // 更新统计信息
     function updateStats() {
-        progressEffect();
+        updateProgress();   // 更新进度条
         document.getElementById("drawn-count").textContent = drawnCount;
         document.getElementById("current-actions").textContent = currentActions;
+        document.getElementById("progress-value").textContent = parseInt(drawnCount / totalCells * 100) + "%";
     }
-    // 进度条效果
-    const progressBar_element = document.getElementById("progressBar");
-    function progressEffect() {
-        let prossbar_value = Math.round((drawnCount / (rows * cols)) * 10000) / 100;
-        document.getElementById("progress-value").textContent = prossbar_value.toFixed(2) + "%";
-        if (prossbar_value <= 0) {
-            progressBar_element.classList.remove("greyBorder");
-        } else {
-            progressBar_element.classList.add("greyBorder");
-        }
-        if (prossbar_value >= 100) {
-            prossbar_value = 100;
-        }
-        progressBar_element.style.width = prossbar_value + "%";
-    }
+
     // 获取所有选项卡按钮和内容
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -580,56 +571,7 @@
         outline: 3px solid red;
     }
 
-    /* 进度条 */
-    .progress-container {
-        width: 100%;
-        height: 30px;
-        border-radius: 16px;
-        position: relative;
-        background-color: #d1e3f1;
-        border: 1px solid grey;
-    }
-
-    #progressBar {
-        height: 100%;
-        background: linear-gradient(45deg, #abdcff, #0396ff);
-        border-radius: 16px 18px 18px 16px;
-        position: absolute;
-        top: 0;
-        left: 0;
-        transition: width 0.5s ease;
-    }
-
-    .greyBorder {
-        border: 1px solid grey;
-    }
-
-    .progress-points {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 100%;
-    }
-
-    .point {
-        display: flex;
-        text-align: center;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 18px;
-        height: 18px;
-        background-color: #dfe6e9;
-        border: 1px solid grey;
-        border-radius: 50%;
-    }
-
+    /* 可点击标签 */
     .lable_clickEnable {
         cursor: pointer;
         display: inline-block;
@@ -639,6 +581,97 @@
         animation: zoomEffect 0.2s ease-in-out infinite alternate;
     }
 </style>
+
+<!-- 进度条 -->
+<style>
+    .progress-container {
+        width: 90%;
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e0e5ec;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .progress-marks {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 10px;
+        position: relative;
+    }
+
+    .mark {
+        width: 20px;
+        height: 20px;
+        background-color: #e0e5ec;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: #4a6baf;
+        position: relative;
+        z-index: 2;
+    }
+
+    .mark.active {
+        background-color: #4facfe;
+        color: white;
+        box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+    }
+
+    .mark-line {
+        position: absolute;
+        height: 2px;
+        background-color: #e0e5ec;
+        top: 50%;
+        left: 10px;
+        right: 10px;
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+</style>
+
+<script>
+    const progressFill = document.getElementById('progress-fill');
+    const actionBtn = document.getElementById('action-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const marks = document.querySelectorAll('.mark');
+
+    function updateProgress() {
+        const percentage = (drawnCount / totalCells) * 100;
+        progressFill.style.width = `${percentage}%`;
+
+        // 更新标记状态
+        marks.forEach(mark => {
+            const markValue = parseInt(mark.dataset.value);
+            if (drawnCount >= markValue) {
+                mark.classList.add('active');
+            } else {
+                mark.classList.remove('active');
+            }
+        });
+    }
+
+</script>
+
 <!-- 滑动条 -->
 <style>
     input[type="range"] {
@@ -939,7 +972,35 @@
         data3_endPoint.push(value);
     }
 
-    // 赞助支持
+</script>
+
+<!-- 棋盘设置 -->
+<script>
+    // 启用和禁用设置项
+    function toggleSettings(object, flag, cusor) {
+        object.disabled = flag;
+        object.style.cursor = cusor;
+    }
+    // 使能设置项
+    function enableSettings() {
+        toggleSettings(firstWeight_element, false, 'text');
+        toggleSettings(secondWeight_element, false, 'text');
+        toggleSettings(maxActions_element, false, 'text');
+        settingsEnabled = true;
+    }
+    // 失能设置项
+    function disableSettings() {
+        if (settingsEnabled) {
+            toggleSettings(firstWeight_element, true, 'not-allowed');
+            toggleSettings(secondWeight_element, true, 'not-allowed');
+            toggleSettings(maxActions_element, true, 'not-allowed');
+            settingsEnabled = false;
+        }
+    }
+</script>
+
+<!-- 赞助支持 -->
+<script>
     const sponsorImg_element = document.getElementById('sponsorImg');
     const sponsorImg_p_element = document.getElementById('sponsorImg_p');
     function toggle_sponsorImg() {
@@ -964,6 +1025,7 @@
         sponsorImg_element.style.display = 'none';
     }
 </script>
+
 <!-- 棋盘统计 -->
 <script>
     // 定义多次统计的棋盘变量

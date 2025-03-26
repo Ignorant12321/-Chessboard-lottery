@@ -26,10 +26,8 @@
             </div>
 
             <div class="h1ContainerItem">
-                <button id="action-btn" class="controlButton"
-                    onclick="performAction();lineChart_Slider_update();">行动</button>
-                <button id="reset-btn" class="controlButton"
-                    onclick="resetBoard();lineChart_Slider_reset();">重置</button>
+                <button id="action-btn" class="controlButton" onclick="performAction()">行动</button>
+                <button id="reset-btn" class="controlButton" onclick="resetBoard()">重置</button>
             </div>
 
             <div class="h1ContainerItem" style="display: block;">
@@ -224,12 +222,15 @@
         // 添加输入事件监听器
         firstWeight_element.addEventListener('input', function () {
             firstWeight = parseInt(this.value); // 更新先权重
+            updateLimit();
         });
         secondWeight_element.addEventListener('input', function () {
             secondWeight = parseInt(this.value); // 更新后权重
+            updateLimit();
         });
         maxActions_element.addEventListener('input', function () {
             maxActions = parseInt(this.value); // 更新行动上限
+            updateLimit();
         });
         times_element.addEventListener('input', function () {
             times = parseInt(this.value); // 更新棋盘统计次数
@@ -237,7 +238,6 @@
         draw_total_element.addEventListener('input', function () {
             draw_total_target = parseInt(this.value); // 更新目标抽签数量
             pieChart_slider_element.value = draw_total_target;  // 更新滑动条
-
             drawChart_pie();// 更新饼状图
         });
         pieChart_slider_element.addEventListener('input', function () {
@@ -404,11 +404,12 @@
         init_data2();    // 初始化存储数据
         createBoard();  // 重新创建棋盘
         updateStats();  // 更新统计信息
+        resetBoard_otherUpdate();   // 更新其他信息
         enableSettings();   // 启用设置项
     }
     // 更新统计信息
     function updateStats() {
-        updateProgress();   // 更新进度条
+        performAction_otherUpdate();   // 更新其他信息
         document.getElementById("drawn-count").textContent = drawnCount;
         document.getElementById("current-actions").textContent = currentActions;
         document.getElementById("progress-value").textContent = parseInt(drawnCount / totalCells * 100) + "%";
@@ -419,7 +420,7 @@
     const tabContents = document.querySelectorAll('.tab-content');
     const h1Container_2_element = document.getElementById('h1Container_2');
 
-    // 添加点击事件
+    // 选项卡添加点击事件
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             // 移除所有按钮的选中状态
@@ -456,6 +457,51 @@
             }
         });
     });
+</script>
+
+<!-- 滚轮输入框 -->
+<script>
+    document.querySelectorAll('.settings-item-input').forEach(input => {
+        input.addEventListener('wheel', function (e) {
+            if (!input.disabled) {
+                e.preventDefault();
+                const step = parseInt(this.step) || 1;
+                let value = parseInt(this.value);
+                // 根据滚轮方向调整数值
+                value += (e.deltaY < 0) ? step : -step;
+                // 确保数值在 min 和 max 之间
+                if (this.max) value = Math.min(value, parseInt(this.max));
+                if (this.min) value = Math.max(value, parseInt(this.min));
+                // 更新输入框的值
+                this.value = value;
+                this.dispatchEvent(new Event('input'));
+            }
+        });
+    });
+</script>
+
+<!-- 进度条 -->
+<script>
+    const progressFill = document.getElementById('progress-fill');
+    const actionBtn = document.getElementById('action-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const marks = document.querySelectorAll('.mark');
+
+    function updateProgress() {
+        const percentage = (drawnCount / totalCells) * 100;
+        progressFill.style.width = `${percentage}%`;
+
+        // 更新标记状态
+        marks.forEach(mark => {
+            const markValue = parseInt(mark.dataset.value);
+            if (drawnCount >= markValue) {
+                mark.classList.add('active');
+            } else {
+                mark.classList.remove('active');
+            }
+        });
+    }
+
 </script>
 
 <style>
@@ -649,29 +695,6 @@
     }
 </style>
 
-<script>
-    const progressFill = document.getElementById('progress-fill');
-    const actionBtn = document.getElementById('action-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const marks = document.querySelectorAll('.mark');
-
-    function updateProgress() {
-        const percentage = (drawnCount / totalCells) * 100;
-        progressFill.style.width = `${percentage}%`;
-
-        // 更新标记状态
-        marks.forEach(mark => {
-            const markValue = parseInt(mark.dataset.value);
-            if (drawnCount >= markValue) {
-                mark.classList.add('active');
-            } else {
-                mark.classList.remove('active');
-            }
-        });
-    }
-
-</script>
-
 <!-- 滑动条 -->
 <style>
     input[type="range"] {
@@ -709,6 +732,7 @@
         cursor: pointer;
     }
 </style>
+
 <!-- 选项卡 -->
 <style>
     /* 选项卡容器 */
@@ -1328,6 +1352,32 @@
 </script>
 
 <script>
+    function updateLimit() {
+        loaded_first = true;
+        draw_total_element.max = maxActions;
+        pieChart_slider_element.max = maxActions;
+        if (draw_total_element.value > maxActions) {
+            draw_total_element.value = maxActions;
+            updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, maxActions);
+        }
+        winning_total_element.max = totalCells;
+        densityChart_slider_element.max = totalCells;
+        if (winning_total_element.value > totalCells) {
+            winning_total_element.value = maxActions;
+            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, totalCells);
+        }
+    }
+    function performAction_otherUpdate() {
+        updateProgress();   // 更新进度条
+        lineChart_Slider_update();  // 更新折线图滑块
+    }
+    function resetBoard_otherUpdate() {
+        lineChart_Slider_reset();   // 重置折线图滑块
+    }
+</script>
+
+<!-- 折线图滑块 -->
+<script>
     const lineChart_slider_element = document.getElementById('lineChart_slider');
     const lineChart_sliderTooltip_element = document.getElementById('lineChart_sliderTooltip');
 
@@ -1357,6 +1407,7 @@
 
 </script>
 
+<!-- 饼状图滑块 -->
 <script>
     const pieChart_slider_element = document.getElementById("pieChart_slider");
     const pieChart_sliderTooltip_element = document.getElementById("pieChart_sliderTooltip");
@@ -1367,6 +1418,7 @@
     sliderTooltip_init(pieChart_slider_element, pieChart_sliderTooltip_element, pieChart_slider_flag);
 </script>
 
+<!-- 密度图滑块 -->
 <script>
     const densityChart_slider_element = document.getElementById("densityChart_slider");
     const densityChart_sliderTooltip_element = document.getElementById("densityChart_sliderTooltip");
@@ -1377,8 +1429,8 @@
     sliderTooltip_init(densityChart_slider_element, densityChart_sliderTooltip_element, densityChart_slider_flag);
 </script>
 
+<!-- 绘制：行动次数-中签次数”折线图 -->
 <script>
-    // 绘制：行动次数-中签次数”折线图
     let lineChart_data; // 折线图数据集
     function drawChart_line() {
         if (!lineChart) { // 创建新图
@@ -1477,9 +1529,8 @@
     }
 </script>
 
-
+<!-- 绘制：“行动次数-中签次数”散点图 -->
 <script>
-    // 绘制：“行动次数-中签次数”散点图
     function drawChart_scatter() {
         let data = getBubbleChartData(data_multiple_brief);
         scatterChart = drawChart_scatter_init("“行动次数-中签次数”散点图", ctx_scatterChart, scatterChart, data);
@@ -1573,6 +1624,7 @@
     }
 </script>
 
+<!-- 绘制：“目标抽签数下，中签概率饼状图” -->
 <script>
     // 获取饼图数据
     let pieChart_data;
@@ -1653,6 +1705,7 @@
     }
 </script>
 
+<!-- 绘制：“目标中签数下，抽签概率密度图” -->
 <script>
     // 获取密度图数据
     let densityChart_data;
@@ -1670,7 +1723,6 @@
             densityChart = drawChart_density_init("目标中签数下，抽签概率密度图", ctx_densityChart, densityChart, data);
         } else {
             drawChart_density_update(densityChart, data);
-            // densityChart = drawChart_density_init("目标中签数下，抽签概率密度图", ctx_densityChart, densityChart, data);
         }
     }
     function drawChart_density_update(chartInstance, data) {

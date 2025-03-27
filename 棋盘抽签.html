@@ -107,7 +107,6 @@
 
                     <!-- 目标统计次数 -->
                     <hr class="divider-line">
-                    <hr class="divider-line">
                     <canvas id="scatterChart_tab3" class="dataChart"></canvas>
                     <p>
                         <label onclick="getdata_3_mul(times)" class="lable_clickEnable">目标统计次数：</label>
@@ -115,7 +114,6 @@
                     </p>
 
                     <!-- 目标抽签次数 -->
-                    <hr class="divider-line">
                     <hr class="divider-line">
                     <canvas id="pieChart_draw" class="dataChart"></canvas>
                     <p>
@@ -135,7 +133,6 @@
 
                     <!-- 目标中签次数 -->
                     <hr class="divider-line">
-                    <hr class="divider-line">
                     <canvas id="scatterChart_winning" class="dataChart"></canvas>
                     <p>
                         <label onclick="drawChart_density()" class="lable_clickEnable">目标中签次数：</label>
@@ -151,7 +148,6 @@
                         <span id="w_median">⚖️中位数: ？？？&nbsp;</span>
                         <span id="w_max">🔶最大值: ？？？</span>
                     </p>
-                    <hr class="divider-line">
                     <hr class="divider-line">
                 </div>
 
@@ -817,7 +813,6 @@
     .dataChart {
         background-color: #f9f9f9;
         display: block;
-        margin: 20px auto;
         width: 100%;
         height: 100%;
     }
@@ -1354,18 +1349,18 @@
 <script>
     function updateLimit() {
         loaded_first = true;
+        
         draw_total_element.max = maxActions;
         pieChart_slider_element.max = maxActions;
-        if (draw_total_element.value > maxActions) {
-            draw_total_element.value = maxActions;
-            updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, maxActions);
-        }
+        draw_total_element.value = maxActions;
+        pieChart_slider_element.value = maxActions;
+        updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, maxActions);
+
         winning_total_element.max = totalCells;
         densityChart_slider_element.max = totalCells;
-        if (winning_total_element.value > totalCells) {
-            winning_total_element.value = maxActions;
-            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, totalCells);
-        }
+        densityChart_slider_element.value = totalCells;
+        winning_total_element.value = maxActions;
+        updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, totalCells);
     }
     function performAction_otherUpdate() {
         updateProgress();   // 更新进度条

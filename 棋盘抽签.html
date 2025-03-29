@@ -215,40 +215,50 @@
         draw_total_element.value = draw_total_target;
         winning_total_element.value = winning_total_target;
         times_element.value = times;
+
         // 添加输入事件监听器
         firstWeight_element.addEventListener('input', function () {
-            firstWeight = parseInt(this.value); // 更新先权重
+            updateValue();
             updateLimit();
         });
         secondWeight_element.addEventListener('input', function () {
-            secondWeight = parseInt(this.value); // 更新后权重
+            updateValue();
             updateLimit();
         });
         maxActions_element.addEventListener('input', function () {
-            maxActions = parseInt(this.value); // 更新行动上限
+            updateValue();
             updateLimit();
         });
         times_element.addEventListener('input', function () {
-            times = parseInt(this.value); // 更新棋盘统计次数
+            updateValue();
         })
-        draw_total_element.addEventListener('input', function () {
+        // 饼状图
+        draw_total_element.addEventListener('input', function () {  // 文本框输入
             draw_total_target = parseInt(this.value); // 更新目标抽签数量
             pieChart_slider_element.value = draw_total_target;  // 更新滑动条
+            updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, draw_total_target);   // 更新滑动条提示
             drawChart_pie();// 更新饼状图
         });
-        pieChart_slider_element.addEventListener('input', function () {
+        pieChart_slider_element.addEventListener('input', function () { // 滑动条输入
             draw_total_target = parseInt(this.value);
+            draw_total_element.value = draw_total_target;
+            updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, draw_total_target);
             drawChart_pie();
         });
+        // 密度图
         winning_total_element.addEventListener('input', function () {
             winning_total_target = parseInt(this.value); // 更新目标抽中数量
             densityChart_slider_element.value = winning_total_target;  // 更新滑动条
+            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);   // 更新滑动条提示
             drawChart_density();// 更新密度图
         });
         densityChart_slider_element.addEventListener('input', function () {
             winning_total_target = parseInt(this.value);
+            winning_total_element.value = winning_total_target;
+            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);
             drawChart_density();
         });
+
         // 点击标题的滚动事件
         title2_element.addEventListener('click', function () {
             title2_element.scrollIntoView({
@@ -1305,7 +1315,7 @@
     function updateSliderTooltip(slider, tooltip, value) {
         const percent = (value - slider.min) / (slider.max - slider.min);
         const sliderRect = slider.getBoundingClientRect();
-        const thumbWidth = 16;
+        const thumbWidth = 20;
         const thumbPosition = percent * (sliderRect.width - thumbWidth) + (thumbWidth / 2);
         tooltip.style.left = `${thumbPosition}px`;
         tooltip.textContent = `${parseInt(value)}`;
@@ -1320,10 +1330,6 @@
         slider.addEventListener('pointerup', () => {
             flag = false;
             tooltip.style.display = 'none';
-        });
-
-        slider.addEventListener('input', (e) => {
-            updateSliderTooltip(slider, tooltip, slider.value);
         });
     }
 </script>
@@ -1347,20 +1353,29 @@
 </script>
 
 <script>
+    function updateValue() {
+        // 更新输入
+        firstWeight = parseInt(firstWeight_element.value);
+        secondWeight = parseInt(secondWeight_element.value);
+        maxActions = parseInt(maxActions_element.value);
+        times = parseInt(times_element.value);
+    }
     function updateLimit() {
+        // 更新限制
         loaded_first = true;
-        
-        draw_total_element.max = maxActions;
-        pieChart_slider_element.max = maxActions;
-        draw_total_element.value = maxActions;
-        pieChart_slider_element.value = maxActions;
-        updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, maxActions);
 
-        winning_total_element.max = totalCells;
-        densityChart_slider_element.max = totalCells;
-        densityChart_slider_element.value = totalCells;
-        winning_total_element.value = maxActions;
-        updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, totalCells);
+        draw_total_target = maxActions;
+        draw_total_element.max = draw_total_target;
+        draw_total_element.value = draw_total_target;
+        pieChart_slider_element.max = draw_total_target;
+        pieChart_slider_element.value = draw_total_target;
+        updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, draw_total_target);
+        winning_total_target = totalCells;
+        winning_total_element.max = winning_total_target;
+        winning_total_element.value = winning_total_target;
+        densityChart_slider_element.value = winning_total_target;
+        densityChart_slider_element.max = winning_total_target;
+        updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);
     }
     function performAction_otherUpdate() {
         updateProgress();   // 更新进度条
@@ -1406,9 +1421,6 @@
 <script>
     const pieChart_slider_element = document.getElementById("pieChart_slider");
     const pieChart_sliderTooltip_element = document.getElementById("pieChart_sliderTooltip");
-    pieChart_slider_element.addEventListener('input', () => {
-        draw_total_element.value = parseInt(pieChart_slider_element.value);
-    });
     let pieChart_slider_flag = false;
     sliderTooltip_init(pieChart_slider_element, pieChart_sliderTooltip_element, pieChart_slider_flag);
 </script>
@@ -1417,9 +1429,6 @@
 <script>
     const densityChart_slider_element = document.getElementById("densityChart_slider");
     const densityChart_sliderTooltip_element = document.getElementById("densityChart_sliderTooltip");
-    densityChart_slider_element.addEventListener('input', () => {
-        winning_total_element.value = parseInt(densityChart_slider_element.value);
-    });
     let densityChart_slider_flag = false;
     sliderTooltip_init(densityChart_slider_element, densityChart_sliderTooltip_element, densityChart_slider_flag);
 </script>

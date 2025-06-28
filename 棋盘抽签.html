@@ -1412,6 +1412,7 @@
     lineChart_slider_element.addEventListener('input', () => {
         let length = parseInt(lineChart_slider_element.value);
         lineChart_data = data_single.slice(0, length + 1);
+        lineChart_tooltip_update();
         drawChart_line_update(lineChart, lineChart_data);
     });
 

@@ -42,12 +42,6 @@
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
                     <div class="progress-marks">
-                        <div class="mark" data-value="1">1</div>
-                        <div class="mark" data-value="5">5</div>
-                        <div class="mark" data-value="10">10</div>
-                        <div class="mark" data-value="15">15</div>
-                        <div class="mark" data-value="20">20</div>
-                        <div class="mark" data-value="25">25</div>
                         <div class="mark-line"></div>
                     </div>
                 </div>
@@ -297,6 +291,53 @@
         }
     }
 
+    // 创建进度条
+    function markGenerate(min, max, num) {
+        // 获取进度条容器
+        const container = document.querySelector('.progress-marks');
+        if (!container) {
+            console.error('未找到 .progress-marks 容器元素');
+            return;
+        }
+
+        // 清空容器内现有标记（保留 mark-line 元素）
+        Array.from(container.children).forEach(child => {
+            if (!child.classList.contains('mark-line')) {
+                container.removeChild(child);
+            }
+        });
+
+        // 参数校验
+        min = Math.min(min, max); // 确保最小值不大于最大值
+        num = Math.max(2, Math.min(10, num)); // 确保点数在2-10之间
+
+        // 生成等距分布的标记点数组
+        const marks = Array.from({ length: num }, (_, i) => {
+            // 线性插值计算每个标记的值
+            return Math.round(min + i * (max - min) / (num - 1));
+        });
+
+        // 确保包含min和max（如果它们不在数组中）
+        if (!marks.includes(min)) marks.push(min);
+        if (!marks.includes(max)) marks.push(max);
+
+        // 去重并排序
+        const uniqueMarks = [...new Set(marks)].sort((a, b) => a - b);
+
+        // 创建并插入标记元素
+        uniqueMarks.forEach(markValue => {
+            const markElement = document.createElement('div');
+            markElement.className = 'mark';
+            markElement.dataset.value = markValue;
+            markElement.textContent = markValue;
+
+            // 在 mark-line 之前插入新标记
+            container.insertBefore(markElement, container.querySelector('.mark-line'));
+        });
+        marks_elements = document.querySelectorAll('.progress-marks .mark');
+
+    }
+
     // 执行动作
     function performAction() {
         const [row, col] = selectCell(board);// 抽取单元格
@@ -409,6 +450,7 @@
         currentActions = 0;
         init_data2();    // 初始化存储数据
         createBoard();  // 重新创建棋盘
+        markGenerate(1, totalCells, 7) // 生成标记点
         updateStats();  // 更新统计信息
         resetBoard_otherUpdate();   // 更新其他信息
         enableSettings();   // 启用设置项
@@ -491,14 +533,14 @@
     const progressFill = document.getElementById('progress-fill');
     const actionBtn = document.getElementById('action-btn');
     const resetBtn = document.getElementById('reset-btn');
-    const marks = document.querySelectorAll('.mark');
+    let marks_elements;
 
     function updateProgress() {
         const percentage = (drawnCount / totalCells) * 100;
         progressFill.style.width = `${percentage}%`;
 
         // 更新标记状态
-        marks.forEach(mark => {
+        marks_elements.forEach(mark => {
             const markValue = parseInt(mark.dataset.value);
             if (drawnCount >= markValue) {
                 mark.classList.add('active');

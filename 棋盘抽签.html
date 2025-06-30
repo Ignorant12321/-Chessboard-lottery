@@ -299,8 +299,9 @@
                 block: 'start'
             });
         })
-        // 如果是移动设备，只显示图标
+        // 如果是移动设备，调整界面
         if (isMobile()) {
+            // 文本压缩
             var tab1Button = document.querySelector('[data-tab="tab-1"]');
             var tab2Button = document.querySelector('[data-tab="tab-2"]');
             var tab3Button = document.querySelector('[data-tab="tab-3"]');
@@ -629,6 +630,30 @@
 
 <!-- 烟花效果 -->
 <script>
+    // 烟花效果配置 - 控制大小和消失时间的参数
+    const FIREWORK_CONFIG = {
+
+        // 大小控制
+        coreSize: 16,             // 核心爆炸大小(px)
+        mainParticleMinSize: 3,   // 主要粒子最小尺寸(px)
+        mainParticleMaxSize: 8,   // 主要粒子最大尺寸(px)
+        trailScaleFactor: 0.7,    // 尾迹相对于主粒子的缩放因子
+        trailScaleStep: 0.2,      // 尾迹缩放递减步长
+        glowSize: 80,             // 光晕大小(px)
+        secondaryParticleMinSize: 2, // 第二层粒子最小尺寸(px)
+        secondaryParticleMaxSize: 5, // 第二层粒子最大尺寸(px)
+
+        // 消失时间控制(ms)
+        coreDuration: 500,        // 核心爆炸持续时间
+        mainDurationBase: 1500,   // 主要粒子基础持续时间
+        mainDurationVariance: 800, // 主要粒子持续时间随机变化量
+        trailDurationBase: 1000,  // 尾迹基础持续时间
+        trailDurationVariance: 600, // 尾迹持续时间随机变化量
+        glowDuration: 1000,       // 光晕持续时间
+        secondaryDurationBase: 1800, // 第二层粒子基础持续时间
+        secondaryDurationVariance: 800, // 第二层粒子持续时间随机变化量
+    };
+
     // 创建增强版烟花粒子效果
     function createFireworks(container) {
         // 清空现有粒子
@@ -664,20 +689,20 @@
     function createCoreExplosion(container, theme) {
         const centerBurst = document.createElement('div');
         centerBurst.className = 'firework-particle';
-        centerBurst.style.width = '16px';
-        centerBurst.style.height = '16px';
+        centerBurst.style.width = `${FIREWORK_CONFIG.coreSize}px`;
+        centerBurst.style.height = `${FIREWORK_CONFIG.coreSize}px`;
         const centerColor = getRandomColor(theme.hRange, theme.sRange, theme.lRange);
         centerBurst.style.backgroundColor = centerColor;
-        centerBurst.style.boxShadow = `0 0 30px ${centerColor}`;
-        centerBurst.style.left = 'calc(50% - 8px)';
-        centerBurst.style.top = 'calc(50% - 8px)';
+        centerBurst.style.boxShadow = `0 0 ${FIREWORK_CONFIG.coreSize * 2}px ${centerColor}`;
+        centerBurst.style.left = 'calc(50% - ' + (FIREWORK_CONFIG.coreSize / 2) + 'px)';
+        centerBurst.style.top = 'calc(50% - ' + (FIREWORK_CONFIG.coreSize / 2) + 'px)';
 
         // 中心爆炸动画
         const centerAnim = centerBurst.animate([
             { opacity: 1, transform: 'scale(0.5)' },
             { opacity: 0, transform: 'scale(4)' }
         ], {
-            duration: 300,
+            duration: FIREWORK_CONFIG.coreDuration,
             easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)'
         });
 
@@ -686,11 +711,12 @@
 
     // 创建主要粒子
     function createMainParticles(container, theme) {
-        const particleCount = 36; // 增加粒子数量
+        const particleCount = 36; // 粒子数量
 
         for (let i = 0; i < particleCount; i++) {
-            // 随机粒子大小
-            const size = 3 + Math.random() * 5;
+            // 使用配置中的参数控制粒子大小
+            const size = FIREWORK_CONFIG.mainParticleMinSize + Math.random() *
+                (FIREWORK_CONFIG.mainParticleMaxSize - FIREWORK_CONFIG.mainParticleMinSize);
 
             // 计算角度和距离，让粒子分布更自然
             const angle = (i / particleCount) * Math.PI * 2;
@@ -712,7 +738,7 @@
             particle.style.top = `calc(50% + ${Math.sin(actualAngle) * distance}px)`;
             particle.style.backgroundColor = color;
 
-            // 添加渐变效果
+            // 添加渐变效果，与粒子大小相关
             particle.style.boxShadow = `0 0 ${size * 3}px ${color}`;
 
             // 物理效果 - 粒子会有轻微的曲线运动
@@ -723,7 +749,7 @@
                 { opacity: 1, transform: 'scale(1)' },
                 { opacity: 0, transform: `scale(${1.5 + Math.random()}) translate(${Math.cos(actualAngle) * 10 * curveFactor}px, ${Math.sin(actualAngle) * 10 * curveFactor}px)` }
             ], {
-                duration: 900 + Math.random() * 500, // 不同的持续时间
+                duration: FIREWORK_CONFIG.mainDurationBase + Math.random() * FIREWORK_CONFIG.mainDurationVariance,
                 easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
             });
 
@@ -741,8 +767,10 @@
         for (let j = 0; j < trailCount; j++) {
             const trail = document.createElement('div');
             trail.className = 'firework-trail';
-            trail.style.width = `${baseSize * (0.7 - j * 0.2)}px`;
-            trail.style.height = `${baseSize * (0.7 - j * 0.2)}px`;
+
+            // 使用配置中的参数控制尾迹大小
+            trail.style.width = `${baseSize * (FIREWORK_CONFIG.trailScaleFactor - j * FIREWORK_CONFIG.trailScaleStep)}px`;
+            trail.style.height = `${baseSize * (FIREWORK_CONFIG.trailScaleFactor - j * FIREWORK_CONFIG.trailScaleStep)}px`;
 
             // 尾迹位置跟随主粒子，但稍微滞后
             const trailDistance = baseDistance * (0.8 - j * 0.15);
@@ -757,7 +785,7 @@
                 { opacity: 0.9, transform: 'scale(1)' },
                 { opacity: 0, transform: 'scale(0.5)' }
             ], {
-                duration: 600 + Math.random() * 400,
+                duration: FIREWORK_CONFIG.trailDurationBase + Math.random() * FIREWORK_CONFIG.trailDurationVariance,
                 delay: j * 100, // 每个尾迹有轻微延迟
                 easing: 'cubic-bezier(0.3, 0.6, 0.8, 1)'
             });
@@ -770,13 +798,13 @@
     function createGlowEffect(container, theme) {
         const glow = document.createElement('div');
         glow.className = 'firework-particle';
-        glow.style.width = '80px';
-        glow.style.height = '80px';
+        glow.style.width = `${FIREWORK_CONFIG.glowSize}px`;
+        glow.style.height = `${FIREWORK_CONFIG.glowSize}px`;
         const glowColor = getRandomColor(theme.hRange, theme.sRange, [60, 80]);
         glow.style.backgroundColor = glowColor;
         glow.style.borderRadius = '50%';
-        glow.style.left = 'calc(50% - 40px)';
-        glow.style.top = 'calc(50% - 40px)';
+        glow.style.left = 'calc(50% - ' + (FIREWORK_CONFIG.glowSize / 2) + 'px)';
+        glow.style.top = 'calc(50% - ' + (FIREWORK_CONFIG.glowSize / 2) + 'px)';
         glow.style.opacity = '0.4';
         glow.style.transform = 'scale(0)';
 
@@ -785,7 +813,7 @@
             { opacity: 0.4, transform: 'scale(0)' },
             { opacity: 0, transform: 'scale(1.2)' }
         ], {
-            duration: 700,
+            duration: FIREWORK_CONFIG.glowDuration,
             easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)'
         });
 
@@ -797,8 +825,9 @@
         const particleCount = 24;
 
         for (let i = 0; i < particleCount; i++) {
-            // 随机粒子大小
-            const size = 2 + Math.random() * 3;
+            // 使用配置中的参数控制第二层粒子大小
+            const size = FIREWORK_CONFIG.secondaryParticleMinSize + Math.random() *
+                (FIREWORK_CONFIG.secondaryParticleMaxSize - FIREWORK_CONFIG.secondaryParticleMinSize);
 
             // 计算角度和距离
             const angle = (i / particleCount) * Math.PI * 2;
@@ -828,7 +857,7 @@
                 { opacity: 1, transform: 'scale(1)' },
                 { opacity: 0, transform: `scale(${1.5 + Math.random()})` }
             ], {
-                duration: 1200 + Math.random() * 600,
+                duration: FIREWORK_CONFIG.secondaryDurationBase + Math.random() * FIREWORK_CONFIG.secondaryDurationVariance,
                 easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
             });
 

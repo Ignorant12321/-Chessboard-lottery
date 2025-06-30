@@ -1121,38 +1121,56 @@
 <!-- 滑动条 -->
 <style>
     input[type="range"] {
+        --thumb-size: 20px;
+        /* 滑块大小 - 可自定义 */
+        --track-fill: #2196F3;
+        /* 轨道填充色 - 默认蓝色 */
+        --focus-scale: 1.2;
+        /* 聚焦放大比例 - 可自定义 */
+
         -webkit-appearance: none;
+        -moz-appearance: none;
         width: 100%;
         height: 10px;
-        background: #ddd;
+        background: linear-gradient(to right, var(--track-fill) 0%, var(--track-fill) var(--progress, 0%), #ddd var(--progress, 0%), #ddd 100%);
         outline: none;
         border-radius: 10px;
     }
 
-    ::-webkit-slider-thumb {
+    /* Chrome/Safari滑块样式 */
+    input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        background: #333;
+        width: var(--thumb-size);
+        height: var(--thumb-size);
+        background: white;
+        border: 2px solid #555;
         border-radius: 50%;
         cursor: pointer;
+        transition: transform 0.2s ease;
+        position: relative;
+        z-index: 1;
     }
 
-    ::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: #333;
+    /* Firefox滑块样式 */
+    input[type="range"]::-moz-range-thumb {
+        width: var(--thumb-size);
+        height: var(--thumb-size);
+        background: white;
+        border: 2px solid #555;
         border-radius: 50%;
         cursor: pointer;
+        transition: transform 0.2s ease;
     }
 
-    ::-ms-thumb {
-        width: 20px;
-        height: 20px;
-        background: #333;
-        border-radius: 50%;
-        cursor: pointer;
+    /* 聚焦放大效果 */
+    input[type="range"]:focus-visible::-webkit-slider-thumb {
+        transform: scale(var(--focus-scale));
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+    }
+
+    input[type="range"]:focus-visible::-moz-range-thumb {
+        transform: scale(var(--focus-scale));
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
     }
 </style>
 

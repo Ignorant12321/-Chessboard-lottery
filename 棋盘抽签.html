@@ -332,6 +332,8 @@
 
     // 创建进度条
     function markGenerate(min, max, num) {
+        // 初始化上次激活的索引
+        lastActiveIndex = -1;
         // 获取进度条容器
         const container = document.querySelector('.progress-marks');
         if (!container) {
@@ -363,17 +365,21 @@
         // 去重并排序
         const uniqueMarks = [...new Set(marks)].sort((a, b) => a - b);
 
-        // 创建并插入标记元素
-        uniqueMarks.forEach(markValue => {
-            const markElement = document.createElement('div');
-            markElement.className = 'mark';
-            markElement.dataset.value = markValue;
-            markElement.textContent = markValue;
+        // 创建标记元素
+        marks_elements = uniqueMarks.map(markValue => {
+            const mark = document.createElement('div');
+            mark.className = 'mark';
+            mark.dataset.value = markValue;
+            mark.textContent = markValue;
 
-            // 在 mark-line 之前插入新标记
-            container.insertBefore(markElement, container.querySelector('.mark-line'));
+            // 添加烟花容器
+            const firework = document.createElement('div');
+            firework.className = 'firework';
+            mark.appendChild(firework);
+
+            container.insertBefore(mark, container.querySelector('.mark-line'));
+            return mark;
         });
-        marks_elements = document.querySelectorAll('.progress-marks .mark');
 
     }
 
@@ -572,23 +578,263 @@
     const progressFill = document.getElementById('progress-fill');
     const actionBtn = document.getElementById('action-btn');
     const resetBtn = document.getElementById('reset-btn');
-    let marks_elements;
+    let marks_elements; // 标记点元素数组
+    let lastActiveIndex = -1;   // 上一个激活的标记点的索引
 
+    // 更新进度和标记状态
     function updateProgress() {
         const percentage = (drawnCount / totalCells) * 100;
         progressFill.style.width = `${percentage}%`;
 
+        let newActiveIndex = -1;
+        const step = Math.round(totalCells / (marks_elements.length - 1));
+
         // 更新标记状态
-        marks_elements.forEach(mark => {
+        marks_elements.forEach((mark, index) => {
             const markValue = parseInt(mark.dataset.value);
-            if (drawnCount >= markValue) {
+            const isActive = drawnCount >= markValue;
+
+            if (isActive) {
                 mark.classList.add('active');
+
+                // 检查是否是新激活的标记
+                if (drawnCount >= markValue && (drawnCount - step < markValue)) {
+                    newActiveIndex = index;
+                }
             } else {
                 mark.classList.remove('active');
+                mark.classList.remove('new-active');
             }
         });
+
+        // 处理新激活的标记
+        if (newActiveIndex !== -1 && newActiveIndex !== lastActiveIndex) {
+            // 移除之前的新激活状态
+            if (lastActiveIndex !== -1 && lastActiveIndex < marks_elements.length) {
+                marks_elements[lastActiveIndex].classList.remove('new-active');
+            }
+
+            // 设置新激活状态并触发动画
+            const newActiveMark = marks_elements[newActiveIndex];
+            newActiveMark.classList.add('new-active');
+
+            // 创建更绚丽的烟花效果
+            createFireworks(newActiveMark.querySelector('.firework'));
+
+            lastActiveIndex = newActiveIndex;
+        }
     }
 
+</script>
+
+<!-- 烟花效果 -->
+<script>
+    // 创建增强版烟花粒子效果
+    function createFireworks(container) {
+        // 清空现有粒子
+        container.innerHTML = '';
+
+        // 随机选择颜色主题
+        const colorThemes = [
+            { hRange: [0, 60], sRange: [70, 90], lRange: [50, 70] }, // 红色系
+            { hRange: [180, 240], sRange: [70, 90], lRange: [50, 70] }, // 蓝色系
+            { hRange: [60, 120], sRange: [70, 90], lRange: [50, 70] }, // 绿色系
+            { hRange: [240, 300], sRange: [70, 90], lRange: [50, 70] }, // 紫色系
+            { hRange: [300, 360], sRange: [70, 90], lRange: [50, 70] }  // 粉色系
+        ];
+
+        const theme = colorThemes[Math.floor(Math.random() * colorThemes.length)];
+
+        // 创建核心爆炸效果
+        createCoreExplosion(container, theme);
+
+        // 创建主要粒子
+        createMainParticles(container, theme);
+
+        // 创建光晕效果
+        createGlowEffect(container, theme);
+
+        // 创建第二层粒子（较小且更远）
+        setTimeout(() => {
+            createSecondaryParticles(container, theme);
+        }, 100);
+    }
+
+    // 创建核心爆炸效果
+    function createCoreExplosion(container, theme) {
+        const centerBurst = document.createElement('div');
+        centerBurst.className = 'firework-particle';
+        centerBurst.style.width = '16px';
+        centerBurst.style.height = '16px';
+        const centerColor = getRandomColor(theme.hRange, theme.sRange, theme.lRange);
+        centerBurst.style.backgroundColor = centerColor;
+        centerBurst.style.boxShadow = `0 0 30px ${centerColor}`;
+        centerBurst.style.left = 'calc(50% - 8px)';
+        centerBurst.style.top = 'calc(50% - 8px)';
+
+        // 中心爆炸动画
+        const centerAnim = centerBurst.animate([
+            { opacity: 1, transform: 'scale(0.5)' },
+            { opacity: 0, transform: 'scale(4)' }
+        ], {
+            duration: 300,
+            easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)'
+        });
+
+        container.appendChild(centerBurst);
+    }
+
+    // 创建主要粒子
+    function createMainParticles(container, theme) {
+        const particleCount = 36; // 增加粒子数量
+
+        for (let i = 0; i < particleCount; i++) {
+            // 随机粒子大小
+            const size = 3 + Math.random() * 5;
+
+            // 计算角度和距离，让粒子分布更自然
+            const angle = (i / particleCount) * Math.PI * 2;
+            const distance = 20 + Math.random() * 30;
+
+            // 添加随机性到角度，使分布更自然
+            const randomAngleOffset = (Math.random() - 0.5) * 0.5;
+            const actualAngle = angle + randomAngleOffset;
+
+            // 随机颜色
+            const color = getRandomColor(theme.hRange, theme.sRange, theme.lRange);
+
+            // 创建主粒子
+            const particle = document.createElement('div');
+            particle.className = 'firework-particle';
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `calc(50% + ${Math.cos(actualAngle) * distance}px)`;
+            particle.style.top = `calc(50% + ${Math.sin(actualAngle) * distance}px)`;
+            particle.style.backgroundColor = color;
+
+            // 添加渐变效果
+            particle.style.boxShadow = `0 0 ${size * 3}px ${color}`;
+
+            // 物理效果 - 粒子会有轻微的曲线运动
+            const curveFactor = (Math.random() - 0.5) * 0.2;
+
+            // 设置动画 - 向外爆炸并消失
+            const particleAnim = particle.animate([
+                { opacity: 1, transform: 'scale(1)' },
+                { opacity: 0, transform: `scale(${1.5 + Math.random()}) translate(${Math.cos(actualAngle) * 10 * curveFactor}px, ${Math.sin(actualAngle) * 10 * curveFactor}px)` }
+            ], {
+                duration: 900 + Math.random() * 500, // 不同的持续时间
+                easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+            });
+
+            container.appendChild(particle);
+
+            // 为每个粒子添加尾迹
+            createTrails(container, size, actualAngle, distance, color);
+        }
+    }
+
+    // 创建尾迹
+    function createTrails(container, baseSize, angle, baseDistance, color) {
+        const trailCount = 3 + Math.floor(Math.random() * 3);
+
+        for (let j = 0; j < trailCount; j++) {
+            const trail = document.createElement('div');
+            trail.className = 'firework-trail';
+            trail.style.width = `${baseSize * (0.7 - j * 0.2)}px`;
+            trail.style.height = `${baseSize * (0.7 - j * 0.2)}px`;
+
+            // 尾迹位置跟随主粒子，但稍微滞后
+            const trailDistance = baseDistance * (0.8 - j * 0.15);
+            trail.style.left = `calc(50% + ${Math.cos(angle) * trailDistance}px)`;
+            trail.style.top = `calc(50% + ${Math.sin(angle) * trailDistance}px)`;
+
+            // 使用渐变色，让尾迹看起来更自然
+            trail.style.backgroundColor = color;
+
+            // 设置尾迹动画
+            const trailAnim = trail.animate([
+                { opacity: 0.9, transform: 'scale(1)' },
+                { opacity: 0, transform: 'scale(0.5)' }
+            ], {
+                duration: 600 + Math.random() * 400,
+                delay: j * 100, // 每个尾迹有轻微延迟
+                easing: 'cubic-bezier(0.3, 0.6, 0.8, 1)'
+            });
+
+            container.appendChild(trail);
+        }
+    }
+
+    // 创建光晕效果
+    function createGlowEffect(container, theme) {
+        const glow = document.createElement('div');
+        glow.className = 'firework-particle';
+        glow.style.width = '80px';
+        glow.style.height = '80px';
+        const glowColor = getRandomColor(theme.hRange, theme.sRange, [60, 80]);
+        glow.style.backgroundColor = glowColor;
+        glow.style.borderRadius = '50%';
+        glow.style.left = 'calc(50% - 40px)';
+        glow.style.top = 'calc(50% - 40px)';
+        glow.style.opacity = '0.4';
+        glow.style.transform = 'scale(0)';
+
+        // 光晕动画
+        const glowAnim = glow.animate([
+            { opacity: 0.4, transform: 'scale(0)' },
+            { opacity: 0, transform: 'scale(1.2)' }
+        ], {
+            duration: 700,
+            easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)'
+        });
+
+        container.appendChild(glow);
+    }
+
+    // 创建第二层粒子
+    function createSecondaryParticles(container, theme) {
+        const particleCount = 24;
+
+        for (let i = 0; i < particleCount; i++) {
+            // 随机粒子大小
+            const size = 2 + Math.random() * 3;
+
+            // 计算角度和距离
+            const angle = (i / particleCount) * Math.PI * 2;
+            const distance = 40 + Math.random() * 30;
+
+            // 添加随机性到角度
+            const randomAngleOffset = (Math.random() - 0.5) * 0.5;
+            const actualAngle = angle + randomAngleOffset;
+
+            // 随机颜色
+            const color = getRandomColor(theme.hRange, theme.sRange, theme.lRange);
+
+            // 创建第二层粒子
+            const particle = document.createElement('div');
+            particle.className = 'firework-particle';
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `calc(50% + ${Math.cos(actualAngle) * distance}px)`;
+            particle.style.top = `calc(50% + ${Math.sin(actualAngle) * distance}px)`;
+            particle.style.backgroundColor = color;
+
+            // 添加渐变效果
+            particle.style.boxShadow = `0 0 ${size * 2}px ${color}`;
+
+            // 设置动画
+            const particleAnim = particle.animate([
+                { opacity: 1, transform: 'scale(1)' },
+                { opacity: 0, transform: `scale(${1.5 + Math.random()})` }
+            ], {
+                duration: 1200 + Math.random() * 600,
+                easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+            });
+
+            container.appendChild(particle);
+        }
+    }
 </script>
 
 <style>
@@ -667,6 +913,7 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         transition: all 0.3s ease;
     }
+
     .setting-group input[type="number"] {
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
@@ -784,10 +1031,19 @@
         z-index: 2;
     }
 
+    /* 已激活状态 */
     .mark.active {
         background-color: #4facfe;
         color: white;
         box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+    }
+
+    /* 新激活状态 */
+    .mark.new-active {
+        background-color: #FF5722;
+        transform: translateX(-50%) scale(1.1);
+        box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.3);
+        z-index: 2;
     }
 
     .mark-line {
@@ -799,6 +1055,37 @@
         right: 10px;
         transform: translateY(-50%);
         z-index: 1;
+    }
+</style>
+
+<!-- 烟花效果 -->
+<style>
+    /* 烟花容器 */
+    .firework {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        top: -38px;
+        left: -38px;
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    /* 烟花粒子 */
+    .firework-particle {
+        position: absolute;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform-origin: 50% 50%;
+        opacity: 0;
+    }
+
+    /* 粒子尾迹 */
+    .firework-trail {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0;
     }
 </style>
 
@@ -1341,7 +1628,7 @@
         // 提取 y 值、标签和颜色
         const yValues = probabilities.map(item => item.count);
         const labels = probabilities.map(item => `index: ${item.y}`); // 图例只显示 index
-        const colors = probabilities.map(() => getRandomColor());  // 为每个数据点生成随机颜色
+        const colors = probabilities.map(() => getRandomColor([0, 360], [40, 60], [40, 60]));  // 为每个数据点生成随机颜色
 
         return {
             labels: labels,
@@ -1448,10 +1735,10 @@
     }
 
     // 随机生成颜色的函数
-    function getRandomColor() {
-        const hue = Math.floor(Math.random() * 360); // 色相
-        const saturation = Math.floor(Math.random() * 21) + 40; // 饱和度 (40%到60%之间)
-        const lightness = Math.floor(Math.random() * 21) + 40; // 亮度 (40%到60%之间)
+    function getRandomColor(hRange = [0, 360], sRange = [0, 100], lRange = [0, 100]) {
+        const hue = Math.floor(Math.random() * (hRange[1] - hRange[0])) + hRange[0]; // 色相
+        const saturation = Math.floor(Math.random() * (sRange[1] - sRange[0])) + sRange[0]; // 饱和度
+        const lightness = Math.floor(Math.random() * (lRange[1] - lRange[0])) + lRange[0]; // 亮度
         return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // 使用 HSL 色彩模型生成柔和的颜色
     }
 

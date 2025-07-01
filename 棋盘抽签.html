@@ -544,6 +544,9 @@
             if (tabId === 'tab-3') {
                 if (loaded_first) {
                     getdata_3_mul(times);
+                    updateSliderTooltip
+                    updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, draw_total_target);
+                    updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);
                     loaded_first = false;
                 }
             } else if (tabId === 'tab-4') {
@@ -1058,6 +1061,7 @@
         color: #4a6baf;
         position: relative;
         z-index: 2;
+        transition: all 0.3s ease;
     }
 
     /* 已激活状态 */
@@ -1065,6 +1069,7 @@
         background-color: #4facfe;
         color: white;
         box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+        transition: all 0.3s ease;
     }
 
     /* 新激活状态 */
@@ -1073,6 +1078,7 @@
         transform: scale(1.1);
         box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.3);
         z-index: 2;
+        transition: all 0.3s ease;
     }
 
     .mark-line {

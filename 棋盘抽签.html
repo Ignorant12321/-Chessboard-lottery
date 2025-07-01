@@ -209,6 +209,7 @@
     let draw_total_target = 28; // 目标抽签数量
     let winning_total_target = 19; // 目标抽中数量
 
+    // 元素组件
     const rows_element = document.getElementById('rows');
     const cols_element = document.getElementById('cols');
     const firstWeight_element = document.getElementById('first-weight');
@@ -219,12 +220,17 @@
     const winning_total_element = document.getElementById('winning_total');
     const title2_element = document.getElementById('title2');
 
-    // 检查是否是移动设备
-    function isMobile() {
-        return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
-    }
+    // 选项卡按钮
+    var tab1Button = document.querySelector('[data-tab="tab-1"]');
+    var tab2Button = document.querySelector('[data-tab="tab-2"]');
+    var tab3Button = document.querySelector('[data-tab="tab-3"]');
+    var tab4Button = document.querySelector('[data-tab="tab-4"]');
 
     document.addEventListener("DOMContentLoaded", () => {
+        // 适配移动设备
+        MobileMode();
+        // 适配黑暗模式
+        DarkMode();
         // 初始化数据
         resetBoard();
         // 初始化图表
@@ -241,6 +247,8 @@
         winning_total_element.value = winning_total_target;
         times_element.value = times;
 
+        // 监听系统主题变化
+        darkModeMediaQuery.addEventListener('change', DarkMode);
         // 添加输入事件监听器
         rows_element.addEventListener('input', function () {
             updateValue();
@@ -265,6 +273,9 @@
         times_element.addEventListener('input', function () {
             updateValue();
         })
+
+
+
         // 饼状图
         draw_total_element.addEventListener('input', function () {  // 文本框输入
             draw_total_target = parseInt(this.value); // 更新目标抽签数量
@@ -299,18 +310,6 @@
                 block: 'start'
             });
         })
-        // 如果是移动设备，调整界面
-        if (isMobile()) {
-            // 文本压缩
-            var tab1Button = document.querySelector('[data-tab="tab-1"]');
-            var tab2Button = document.querySelector('[data-tab="tab-2"]');
-            var tab3Button = document.querySelector('[data-tab="tab-3"]');
-            var tab4Button = document.querySelector('[data-tab="tab-4"]');
-            tab1Button.textContent = '⚙️';
-            tab2Button.textContent = '🔍';
-            tab3Button.textContent = '📈';
-            tab4Button.textContent = '🍨';
-        }
     });
 
     // 创建棋盘
@@ -554,6 +553,45 @@
             }
         });
     });
+</script>
+
+<!-- 移动设备和深色模式 -->
+<script>
+    // 获取深色模式媒体查询对象
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    // 设置Canvas背景色的函数
+    function DarkMode() {
+        // 切换canvas背景色
+        const canvases = document.querySelectorAll('canvas');
+        canvases.forEach(canvas => {
+            // 根据深色模式状态设置背景色
+            canvas.style.backgroundColor = darkModeMediaQuery.matches
+                ? '#222222'   // 深色模式背景色
+                : '#f5f5f5'; // 浅色模式背景色
+        });
+    }
+
+    // 移动设备适配
+    function isMobile() {
+        return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+    }
+    function MobileMode() {
+        if (isMobile()) {
+            // 文本压缩
+            tab1Button.textContent = '⚙️';
+            tab2Button.textContent = '🔍';
+            tab3Button.textContent = '📈';
+            tab4Button.textContent = '🍨';
+        }
+        else {
+            // 文本还原
+            tab1Button.textContent = '⚙️ 设置';
+            tab2Button.textContent = '🔍 分析';
+            tab3Button.textContent = '📈 统计';
+            tab4Button.textContent = '🍨 赞助';
+        }
+    }
 </script>
 
 <!-- 滚轮输入框 -->
@@ -1069,7 +1107,7 @@
         background-color: #4facfe;
         color: white;
         box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
-        transition: all 0.3s ease;
+        transition: all 0.5s ease;
     }
 
     /* 新激活状态 */
@@ -1078,7 +1116,7 @@
         transform: scale(1.1);
         box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.3);
         z-index: 2;
-        transition: all 0.3s ease;
+        transition: all 0.5s ease;
     }
 
     .mark-line {
@@ -1164,8 +1202,8 @@
 
     /* 轨道悬停效果 */
     input[type="range"]:hover {
-        transform: scaleY(var(--track-hover-scale));
         /* 仅垂直方向缩放 */
+        transform: scaleY(var(--track-hover-scale));
     }
 
     /* Chrome/Safari滑块样式 */
@@ -1706,7 +1744,7 @@
         // 提取 y 值、标签和颜色
         const yValues = probabilities.map(item => item.count);
         const labels = probabilities.map(item => `index: ${item.y}`); // 图例只显示 index
-        const colors = probabilities.map(() => getRandomColor([0, 360], [40, 60], [40, 60]));  // 为每个数据点生成随机颜色
+        const colors = probabilities.map(() => getRandomColor([0, 360], [30, 70], [70, 90]));  // 小清新风格颜色
 
         return {
             labels: labels,
@@ -1817,7 +1855,7 @@
         const hue = Math.floor(Math.random() * (hRange[1] - hRange[0])) + hRange[0]; // 色相
         const saturation = Math.floor(Math.random() * (sRange[1] - sRange[0])) + sRange[0]; // 饱和度
         const lightness = Math.floor(Math.random() * (lRange[1] - lRange[0])) + lRange[0]; // 亮度
-        return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // 使用 HSL 色彩模型生成柔和的颜色
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // 使用 HSL 色彩模型生成目标风格的颜色
     }
 
 </script>

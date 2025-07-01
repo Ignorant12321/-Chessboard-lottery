@@ -1127,20 +1127,45 @@
 <!-- 滑动条 -->
 <style>
     input[type="range"] {
-        --thumb-size: 20px;
-        /* 滑块大小 - 可自定义 */
-        --track-fill: #2196F3;
-        /* 轨道填充色 - 默认蓝色 */
-        --focus-scale: 1.2;
-        /* 聚焦放大比例 - 可自定义 */
+        /* 滑块大小 */
+        --thumb-size: 13px;
+        /* 轨道尺寸 */
+        --track-height: 9px;
+        --track-radius: 10px;
+        /* 颜色变量 */
+        --track-fill: #d4dde1;
+        --thumb-bg: #ffffff;
+        --thumb-border: #a4b0be;
+        --thumb-border-width: 2px;
+        /* 轨道边框 */
+        --track-border: 1px solid #ccc;
+        /* 轨道阴影 */
+        --track-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset;
+        /* 悬停效果变量 */
+        --hover-scale: 1.2;
+        --hover-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
+        --track-hover-scale: 1.02;
+        /* 轨道悬停缩放比例 */
+        --track-hover-transition: transform 0.2s ease;
+        /* 轨道过渡效果 */
 
         -webkit-appearance: none;
         -moz-appearance: none;
         width: 100%;
-        height: 10px;
-        background: linear-gradient(to right, var(--track-fill) 0%, var(--track-fill) var(--progress, 0%), #ddd var(--progress, 0%), #ddd 100%);
+        height: var(--track-height);
+        background: var(--track-fill);
         outline: none;
-        border-radius: 10px;
+        border-radius: var(--track-radius);
+        border: var(--track-border);
+        box-shadow: var(--track-shadow);
+        transition: var(--track-hover-transition);
+        /* 添加过渡效果 */
+    }
+
+    /* 轨道悬停效果 */
+    input[type="range"]:hover {
+        transform: scaleY(var(--track-hover-scale));
+        /* 仅垂直方向缩放 */
     }
 
     /* Chrome/Safari滑块样式 */
@@ -1148,8 +1173,8 @@
         -webkit-appearance: none;
         width: var(--thumb-size);
         height: var(--thumb-size);
-        background: white;
-        border: 2px solid #555;
+        background: var(--thumb-bg);
+        border: var(--thumb-border-width) solid var(--thumb-border);
         border-radius: 50%;
         cursor: pointer;
         transition: transform 0.2s ease;
@@ -1161,22 +1186,22 @@
     input[type="range"]::-moz-range-thumb {
         width: var(--thumb-size);
         height: var(--thumb-size);
-        background: white;
-        border: 2px solid #555;
+        background: var(--thumb-bg);
+        border: var(--thumb-border-width) solid var(--thumb-border);
         border-radius: 50%;
         cursor: pointer;
         transition: transform 0.2s ease;
     }
 
-    /* 聚焦放大效果 */
-    input[type="range"]:focus-visible::-webkit-slider-thumb {
-        transform: scale(var(--focus-scale));
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+    /* 滑块悬停效果 */
+    input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(var(--hover-scale));
+        box-shadow: var(--hover-shadow);
     }
 
-    input[type="range"]:focus-visible::-moz-range-thumb {
-        transform: scale(var(--focus-scale));
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+    input[type="range"]::-moz-range-thumb:hover {
+        transform: scale(var(--hover-scale));
+        box-shadow: var(--hover-shadow);
     }
 </style>
 
@@ -1811,7 +1836,7 @@
     function updateLimit() {
         // 更新限制
         loaded_first = true;
-
+        // 更新提示词
         draw_total_target = maxActions;
         draw_total_element.max = draw_total_target;
         draw_total_element.value = draw_total_target;
@@ -1821,8 +1846,8 @@
         winning_total_target = totalCells;
         winning_total_element.max = winning_total_target;
         winning_total_element.value = winning_total_target;
-        densityChart_slider_element.value = winning_total_target;
         densityChart_slider_element.max = winning_total_target;
+        densityChart_slider_element.value = winning_total_target;
         updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);
     }
     function performAction_otherUpdate() {

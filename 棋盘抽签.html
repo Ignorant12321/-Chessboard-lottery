@@ -293,13 +293,13 @@
         winning_total_element.addEventListener('input', function () {
             winning_total_target = parseInt(this.value); // 更新目标抽中数量
             densityChart_slider_element.value = winning_total_target;  // 更新滑动条
-            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);   // 更新滑动条提示
+            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, this.value);   // 更新滑动条提示
             drawChart_density();// 更新密度图
         });
         densityChart_slider_element.addEventListener('input', function () {
             winning_total_target = parseInt(this.value);
             winning_total_element.value = winning_total_target;
-            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);
+            updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, this.value);
             drawChart_density();
         });
 
@@ -543,7 +543,6 @@
             if (tabId === 'tab-3') {
                 if (loaded_first) {
                     getdata_3_mul(times);
-                    updateSliderTooltip
                     updateSliderTooltip(pieChart_slider_element, pieChart_sliderTooltip_element, draw_total_target);
                     updateSliderTooltip(densityChart_slider_element, densityChart_sliderTooltip_element, winning_total_target);
                     loaded_first = false;

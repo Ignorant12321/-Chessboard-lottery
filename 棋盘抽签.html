@@ -1822,7 +1822,7 @@
     function updateSliderTooltip(slider, tooltip, value) {
         const percent = (value - slider.min) / (slider.max - slider.min);
         const sliderRect = slider.getBoundingClientRect();
-        const thumbWidth = 20;
+        const thumbWidth = parseFloat(getComputedStyle(slider).getPropertyValue('--thumb-size'));
         const thumbPosition = percent * (sliderRect.width - thumbWidth) + (thumbWidth / 2);
         tooltip.style.left = `${thumbPosition}px`;
         tooltip.textContent = `${parseInt(value)}`;

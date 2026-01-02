@@ -8,7 +8,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chess Board</title>
 </head>
 
@@ -39,20 +39,22 @@
                         <span class="stat-value primary" id="current-actions">0</span>
                     </div>
                     <div class="stat-card" style="grid-column: span 2;">
-                        <span class="stat-label">当前总进度</span>
-                        <span class="stat-value" id="progress-value">0%</span>
+                        <span class="stat-label">当前总进度：</span>
+                        <span class="stat-value" id="progress-value" style="text-align: right;">0%</span>
+                        <!-- 进度条区 -->
+                        <div class="progress-section">
+                            <div class="progress-header">
+                                <span>Collection Progress</span>
+                            </div>
+                            <div class="progress-container-inner">
+                                <div class="progress-fill" id="progress-fill"></div> <!-- 标记点进度条 -->
+                                <div class="progress-marks"></div> <!-- 标记点容器 -->
+                            </div>
+                        </div>
                     </div>
+
                 </div>
-                <!-- 进度条区 -->
-                <div class="progress-section">
-                    <div class="progress-header">
-                        <span>Collection Progress</span>
-                    </div>
-                    <div class="progress-container-inner">
-                        <div class="progress-fill" id="progress-fill"></div>
-                        <div class="progress-marks"></div> <!-- 标记点容器 -->
-                    </div>
-                </div>
+
                 <!-- 按钮区 -->
                 <div class="btn-group">
                     <button id="action-btn" class="btn btn-primary" onclick="performAction()">🎲 掷骰 (Roll)</button>
@@ -63,9 +65,11 @@
 
             <!-- 右侧 棋盘区 -->
             <div class="board-panel">
-                <table id="chessboard">
-                    <!-- JS 动态生成 -->
-                </table>
+                <div class="board-scaler">
+                    <table id="chessboard">
+                        <!-- JS 动态生成 -->
+                    </table>
+                </div>
             </div>
         </div>
     </section>
@@ -137,7 +141,7 @@
                         <div>
                             <input type="number" id="times" class="settings-item-input" value="10" min="1" max="100000"
                                 style="margin-right:10px;">
-                            <button class="btn btn-primary" id="btn-run-stats" onclick="runStats()"
+                            <button class="btn btn-primary" id="btn-run-stats" onclick="runStatsWithEffect()"
                                 style="padding: 6px 12px; font-size: 12px;">运行统计</button>
                         </div>
                     </div>
@@ -232,6 +236,7 @@
         --success: #2dce89;
         --warning: #fb6340;
         --info: #11cdef;
+        --inactive-gray: #e2e8f0;
 
         --text-main: #32325d;
         --text-light: #8898aa;
@@ -258,12 +263,12 @@
     /* 深色模式 */
     body.dark-mode {
         --primary: #758bfd;
-        /* 稍微调亮一点以适应黑底 */
         --primary-dark: #5e72e4;
 
         --text-main: #f0f2f5;
         --text-light: #a0aec0;
         --text-chart: #a0aec0;
+        --inactive-gray: #4a5568;
 
         --bg-body: #121212;
         --bg-card: #1e1e1e;
@@ -287,7 +292,8 @@
         margin: 0;
         padding: 0;
         height: 100vh;
-        /* 锁定视口高度 */
+        overflow-y: auto;
+        overflow-x: hidden;
         user-select: none;
         transition: background-color 0.3s, color 0.3s;
     }
@@ -308,7 +314,7 @@
         justify-content: center;
         align-items: center;
 
-        /* 优化动画：时长增加到0.8s，曲线调整为有弹性的回弹效果 */
+        /* 主题切换动画：时长增加到0.8s，曲线调整为有弹性的回弹效果 */
         transition: transform 0.8s cubic-bezier(0.34, 1.3, 0.64, 1), background-color 0.3s;
 
         color: var(--text-main);
@@ -317,18 +323,18 @@
 
     #theme-toggle:hover {
         background: var(--bg-hover);
-        transform: rotate(30deg);
+        transform: rotate(90deg);
         /* 悬停时轻微旋转 */
     }
 
-    /* 深色模式下的按钮旋转状态：旋转360度并回弹 */
+    /* 深色模式下的按钮旋转状态：旋转-360度并回弹 */
     body.dark-mode #theme-toggle {
-        transform: rotate(360deg);
+        transform: rotate(-360deg);
     }
 
     /* 全屏容器 */
     .fullscreen-section {
-        height: 100%;
+        min-height: 100vh;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -341,15 +347,178 @@
 <style>
     .main-container {
         display: flex;
+        /* 默认行布局 (宽 > 高) */
         flex-direction: row;
-        /* 水行布局 */
         width: 100%;
-        height: 100%;
+        flex: 1;
+        /* 充满父容器 */
         align-items: stretch;
         background: var(--bg-card);
         overflow: hidden;
         /* 隐藏超出容器的内容 */
         transition: background-color 0.3s;
+    }
+
+    /* 响应式布局：当是竖屏（高>=宽）时，改为上下布局 */
+    @media (orientation: portrait) {
+        .main-container {
+            flex-direction: column;
+        }
+
+        .info-panel {
+            flex: 0 0 auto !important;
+            /* 不伸缩，根据内容决定高度，但限制最大高度 */
+            width: 100%;
+            max-height: 55vh;
+            /* 限制高度，把空间留给棋盘 */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05) !important;
+            padding: 15px !important;
+            /* 减小内边距 */
+        }
+
+        .board-panel {
+            flex: 1;
+            /* 占据剩余空间 */
+            width: 100%;
+            min-height: 40vh;
+            /* 确保棋盘有空间 */
+        }
+
+    }
+
+    /* 当是横屏（宽>高），但高度较小（移动端/平板横屏）时，强制锁定高度，内部滚动 */
+    @media (orientation: landscape) and (max-height: 800px) {
+        .fullscreen-section {
+            height: 100vh !important;
+            /* 强制锁定为一屏高度 */
+            min-height: 100vh !important;
+        }
+
+        .main-container {
+            height: 100% !important;
+            overflow: hidden !important;
+            /* 防止容器被内容撑开 */
+        }
+
+        .info-panel {
+            flex: 0 0 45% !important;
+            /* 横屏时给信息栏多一点宽度，防止太挤 */
+            height: 100% !important;
+            overflow-y: auto !important;
+            /* 核心：让信息栏内部滚动 */
+            padding: 15px !important;
+        }
+
+        .board-panel {
+            flex: 1 !important;
+            height: 100% !important;
+            overflow: hidden !important;
+        }
+
+        /* 调整内部元素边距，节省空间 */
+        .header {
+            margin-bottom: 10px !important;
+        }
+
+        .header h1 {
+            margin-bottom: 2px !important;
+            font-size: 20px !important;
+        }
+
+        .stats-grid {
+            gap: 8px !important;
+            margin-bottom: 10px !important;
+        }
+
+        .progress-section {
+            margin-bottom: 15px !important;
+        }
+    }
+
+    /* 修改点3：更激进的移动端/小屏幕适配 (768px以下就触发) */
+    @media (max-width: 768px),
+    (max-height: 800px) {
+
+        /* 标题缩小 */
+        .header h1 {
+            font-size: 20px !important;
+            margin-bottom: 5px !important;
+        }
+
+        .header p {
+            font-size: 12px !important;
+            margin-bottom: 10px !important;
+        }
+
+        .header {
+            margin-bottom: 10px !important;
+        }
+
+        /* 卡片缩小 */
+        .stats-grid {
+            gap: 8px !important;
+            margin-bottom: 15px !important;
+        }
+
+        .stat-card {
+            padding: 10px !important;
+            border-radius: 8px !important;
+        }
+
+        .stat-label {
+            font-size: 10px !important;
+            margin-bottom: 2px !important;
+        }
+
+        .stat-value {
+            font-size: 18px !important;
+        }
+
+        /* 进度条区域缩小 */
+        .progress-section {
+            margin-bottom: 15px !important;
+        }
+
+        .progress-header {
+            font-size: 11px !important;
+            margin-bottom: 5px !important;
+        }
+
+        .progress-container-inner {
+            height: 16px !important;
+            margin-top: 8px !important;
+        }
+
+        .mark {
+            width: 16px !important;
+            height: 16px !important;
+            font-size: 8px !important;
+        }
+
+        /* 按钮缩小 */
+        .btn-group {
+            gap: 8px !important;
+        }
+
+        .btn {
+            padding: 10px !important;
+            font-size: 12px !important;
+            border-radius: 6px !important;
+        }
+
+        /* 面板内边距缩小 */
+        .info-panel {
+            padding: 15px !important;
+        }
+
+        /* 主题按钮 */
+        #theme-toggle {
+            top: 10px !important;
+            right: 10px !important;
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 14px !important;
+        }
     }
 
     /* 左侧 信息栏 */
@@ -380,7 +549,6 @@
         flex: 0 0 60%;
         width: 100%;
         background: var(--bg-secondary);
-        padding: 20px;
         box-sizing: border-box;
         display: flex;
         justify-content: center;
@@ -388,6 +556,17 @@
         position: relative;
         overflow: hidden;
         transition: background-color 0.3s;
+    }
+
+    /* 棋盘缩放容器 */
+    .board-scaler {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        /* 确保不会溢出 */
+        overflow: hidden;
     }
 
     /* =========================================
@@ -496,35 +675,53 @@
         pointer-events: none;
     }
 
+    /* 标记点样式优化 */
     .mark {
         position: absolute;
         top: 50%;
         transform: translate(-50%, -50%);
-        width: 12px;
-        height: 12px;
+        width: 20px;
+        /* 加大一点以容纳数字 */
+        height: 20px;
         background: var(--bg-card);
-        border: 2px solid #cbd5e0;
+        border: 2px solid var(--inactive-gray);
+        /* 默认未激活灰色 */
+        color: var(--text-light);
+        /* 未激活文字颜色 */
         border-radius: 50%;
         z-index: 2;
-        transition: all 0.3s;
         display: flex;
-        /* 确保文字居中 */
         justify-content: center;
         align-items: center;
-        font-size: 0;
-        /* 默认隐藏数字，hover显示? 或者不显示 */
+        font-size: 12px;
+        /* 数字大小 */
+        font-weight: bold;
+
+        /* 优化点：平滑过渡，使用弹性贝塞尔曲线 */
+        transition: background-color 0.5s ease,
+            border-color 0.5s ease,
+            color 0.3s ease,
+            transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .mark.active {
+    /* 状态1: 已经激活 (Done) - 绿色 */
+    .mark.passed {
         border-color: var(--success);
         background: var(--success);
-        box-shadow: 0 0 0 3px rgba(45, 206, 137, 0.2);
+        color: white;
+        transform: translate(-50%, -50%) scale(1.0);
+        /* 正常大小 */
     }
 
-    .mark.new-active {
-        transform: translate(-50%, -50%) scale(1.4);
-        background: var(--warning);
+    /* 状态2: 正在激活 (Current Active) - 橙色/警告色 + 呼吸效果 */
+    .mark.active {
         border-color: var(--warning);
+        background: var(--warning);
+        color: white;
+        box-shadow: 0 0 0 3px rgba(251, 99, 64, 0.3);
+        transform: translate(-50%, -50%) scale(1.2);
+        /* 放大 */
+        z-index: 3;
     }
 
     /* 操作按钮 */
@@ -593,13 +790,18 @@
         padding: 15px;
         border-radius: 16px;
         box-shadow: var(--shadow);
-        transition: transform 0.3s, background-color 0.3s;
+        transition: transform 0.1s ease-out, background-color 0.3s;
+        /* 缩放动画 */
+        transform-origin: center center;
+        /* 从中心缩放 */
     }
 
     td {
         width: 60px;
-        /* 略微加大 */
         height: 60px;
+        /* Fallback */
+        aspect-ratio: 1 / 1;
+        /* 强制正方形 */
         border: 1px solid var(--cell-border);
         border-radius: 10px;
         font-weight: bold;
@@ -763,20 +965,14 @@
         position: absolute;
         width: 100px;
         height: 100px;
-        top: -44px;
-        /* 调整位置使其居中于标记点 */
-        left: -44px;
+        top: -40px;
+        /* 调整位置使其居中 */
+        left: -40px;
         pointer-events: none;
         z-index: 100;
     }
 
     .firework-particle {
-        position: absolute;
-        border-radius: 50%;
-        opacity: 0;
-    }
-
-    .firework-trail {
         position: absolute;
         border-radius: 50%;
         opacity: 0;
@@ -822,6 +1018,7 @@
     }
 
     .h2_dialog {
+        text-align: left;
         margin-top: 0;
         color: var(--text-main);
     }
@@ -1032,6 +1229,9 @@
         resetBoard();   // 重置棋盘
         drawChart_line(); // 初始绘制折线图
 
+        // 初始缩放
+        resizeBoard();
+
         // 初始化输入值
         rows_element.value = rows;
         cols_element.value = cols;
@@ -1042,7 +1242,7 @@
         winning_total_element.value = winning_total_target;
 
 
-        // 移动端适配处理
+        // 移动端适配处理文案
         if (/Mobi|Android/i.test(navigator.userAgent)) {
             document.querySelectorAll('.tab-button').forEach(btn => {
                 const text = btn.textContent;
@@ -1054,11 +1254,13 @@
         }
     });
 
+    // 监听窗口大小改变，触发棋盘缩放
+    window.addEventListener('resize', resizeBoard);
+
     /* =========================================
        主题控制
        ========================================= */
     function initTheme() {
-        // 取消本地存储读取，默认亮色
         document.body.classList.remove('dark-mode');
         updateThemeUI();
         updateChartTheme();
@@ -1103,6 +1305,10 @@
                 updateLimit(); // 限制更新需要重新计算
             });
         });
+
+        // 棋盘规格变化时也要重新缩放
+        rows_element.addEventListener('input', () => setTimeout(resizeBoard, 100));
+        cols_element.addEventListener('input', () => setTimeout(resizeBoard, 100));
 
         times_element.addEventListener('input', updateValue);
 
@@ -1235,6 +1441,39 @@
             }
             table.appendChild(row);
         }
+        // 重建后立即计算缩放
+        setTimeout(resizeBoard, 0);
+    }
+
+    // 棋盘缩放核心逻辑
+    function resizeBoard() {
+        const table = document.getElementById('chessboard');
+        const container = document.querySelector('.board-panel');
+
+        if (!container || !table) return; // 确保元素存在
+
+        // 1. 先重置 transform，获取原始尺寸
+        table.style.transform = 'none';
+
+        let naturalWidth = table.offsetWidth;
+        let naturalHeight = table.offsetHeight;
+        let naturalSize = Math.min(naturalWidth, naturalHeight);
+
+        // 2. 获取容器尺寸（不再使用 viewport 尺寸）
+        const cw = container.clientWidth;
+        const ch = container.clientHeight;
+
+        // 3. 计算目标尺寸
+        // 需求："基于距离容器的最短长或宽" -> 目标是 80% 的最短边
+        const shortestSide = Math.min(cw, ch);
+        const targetSize = shortestSide * 0.8;
+
+        // 4. 计算缩放比例
+        const scale = targetSize / naturalSize;
+
+        // 5. 应用缩放
+        table.style.transform = `scale(${scale})`;
+
     }
 
     function performAction() {
@@ -1276,7 +1515,7 @@
 
         // 更新折线图范围
         lineChart_slider_element.max = currentActions;
-        lineChart_slider_element.value = currentActions; // 自动跟随到最新
+        lineChart_slider_element.value = currentActions;
         lineChart_input_element.max = currentActions;
         lineChart_input_element.value = currentActions;
 
@@ -1414,6 +1653,7 @@
             const mark = document.createElement('div');
             mark.className = 'mark';
             mark.dataset.value = val;
+            mark.textContent = val; // 新增：圆点内部显示数字
 
             const fw = document.createElement('div');
             fw.className = 'firework';
@@ -1432,16 +1672,41 @@
         const pct = (drawnCount / totalCells) * 100;
         document.getElementById('progress-fill').style.width = `${pct}%`;
 
+        let currentActiveVal = -1;
+
+        // 找到小于等于当前进度的最大标记值
         marks_elements.forEach(mark => {
             const val = parseInt(mark.dataset.value);
             if (drawnCount >= val) {
-                if (!mark.classList.contains('active')) {
-                    mark.classList.add('active');
-                    mark.classList.add('new-active');
-                    createFireworks(mark.querySelector('.firework'));
+                if (val > currentActiveVal) currentActiveVal = val;
+            }
+        });
+
+        marks_elements.forEach(mark => {
+            const val = parseInt(mark.dataset.value);
+
+            if (val === currentActiveVal) {
+                // 这是当前"正在激活/最新达成"的点 -> 样式：active (橙色+烟花)
+                mark.classList.remove('passed'); // 移除 passed 状态
+                mark.classList.add('active'); // 添加 active 状态
+
+                // 只有当它之前不是active时才触发烟花（防止每次update都触发）
+                // 但由于reset会清空，这里简单判断即可。
+                // 为了保证烟花动画能重播，可以检测元素状态
+                // 这里简化处理：每次进入Active状态都尝试触发
+                const fw = mark.querySelector('.firework');
+                if (fw.innerHTML === '') {
+                    createFireworks(fw);
                 }
+            } else if (val < currentActiveVal) {
+                // 这是以前达成过的点 -> 样式：passed (绿色，无烟花)
+                mark.classList.remove('active'); // 移除 active 状态
+                mark.classList.add('passed'); // 添加 passed 状态
+                mark.querySelector('.firework').innerHTML = ''; // 清除烟花
             } else {
-                mark.classList.remove('active', 'new-active');
+                // 未来的点 -> 默认样式 (灰色)
+                mark.classList.remove('active', 'passed');
+                mark.querySelector('.firework').innerHTML = '';
             }
         });
     }
@@ -1481,14 +1746,20 @@
         data3_endPoint = [];
     }
 
-    // 运行统计函数
-    function runStats() {
+    // 带特效的运行统计函数
+    function runStatsWithEffect() {
         const btn = document.getElementById('btn-run-stats');
         const originalText = btn.innerText;
+
+
+        // 1. 设置等待状态 (启动流光动画)
+        btn.classList.add('btn-loading');
         btn.innerText = "计算中..."; // 提示用户正在计算
         btn.disabled = true;
+
         const N = parseInt(document.getElementById('times').value);
         getdata_3_mul(N);
+        btn.classList.remove('btn-loading');
         btn.innerText = originalText;
         btn.disabled = false;
     }

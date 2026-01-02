@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<!-- 引入 Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- 元数据 -->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Board</title>
+</head>
+
+<!-- 主体部分 -->
+
+<body>
+    <!-- 第一屏：游戏区 -->
+    <section class="fullscreen-section">
+        <div class="main-container">
+            <!-- 左侧 信息栏 -->
+            <div class="info-panel">
+                <!-- 主题切换按钮 -->
+                <button id="theme-toggle" onclick="toggleTheme()" title="切换深色/浅色模式">☀</button>
+
+                <!-- 标题区 -->
+                <div class="header">
+                    <h1>棋盘抽签</h1>
+                    <p>Lucky Draw Simulation</p>
+                </div>
+                <!-- 卡片区 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">已收集 (Collections)</span>
+                        <span class="stat-value highlight" id="drawn-count">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">行动数 (Actions)</span>
+                        <span class="stat-value primary" id="current-actions">0</span>
+                    </div>
+                    <div class="stat-card" style="grid-column: span 2;">
+                        <span class="stat-label">当前总进度</span>
+                        <span class="stat-value" id="progress-value">0%</span>
+                    </div>
+                </div>
+                <!-- 进度条区 -->
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span>Collection Progress</span>
+                    </div>
+                    <div class="progress-container-inner">
+                        <div class="progress-fill" id="progress-fill"></div>
+                        <div class="progress-marks"></div> <!-- 标记点容器 -->
+                    </div>
+                </div>
+                <!-- 按钮区 -->
+                <div class="btn-group">
+                    <button id="action-btn" class="btn btn-primary" onclick="performAction()">🎲 掷骰 (Roll)</button>
+                    <button id="reset-btn" class="btn btn-outline" onclick="resetBoard()">🔄 重置 (Reset)</button>
+                </div>
+
+            </div>
+
+            <!-- 右侧 棋盘区 -->
+            <div class="board-panel">
+                <table id="chessboard">
+                    <!-- JS 动态生成 -->
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第二屏：设置与分析 -->
+    <section class="tabs-section">
+        <div class="tabs">
+            <div class="tab-button" data-tab="tab-settings">⚙️设置 (Settings)</div>
+            <div class="tab-button active" data-tab="tab-analyze">✒️分析 (Analyze)</div>
+            <div class="tab-button" data-tab="tab-stats">📈统计 (Stats)</div>
+            <div class="tab-button" data-tab="tab-sponsor">ℹ️关于 (About)</div>
+        </div>
+
+        <div class="tab-content-container" id="tab-content-container">
+            <!-- 分析面板 (默认显示) -->
+            <div class="tab-content active" id="tab-analyze">
+                <div class="setting-group">
+                    <h4>“行动次数-中签次数”折线图</h4>
+                    <div class="chart-container">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                    <div class="slider-wrapper">
+                        <!-- 新增：折线图的输入框头部 -->
+                        <div class="slider-header">
+                            <label>回放进度：</label>
+                            <input type="number" id="lineChart_input" class="settings-item-input" value="0" min="0"
+                                max="0" style="width:60px;">
+                        </div>
+                        <!-- 包裹滑块的容器，用于定位Tooltip -->
+                        <div class="range-container">
+                            <input type="range" id="lineChart_slider" class="custom-slider" step="0.01" value="0"
+                                min="0" max="0.1">
+                            <div id="lineChart_sliderTooltip" class="slider-tooltip">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置面板 -->
+            <div class="tab-content" id="tab-settings">
+                <div class="setting-group">
+                    <h4>棋盘规格 (Standard)</h4>
+                    <div class="setting-row"><label>行数 (Rows)</label><input type="number" id="rows"
+                            class="settings-item-input" value="5" min="1"></div>
+                    <div class="setting-row"><label>列数 (Cols)</label><input type="number" id="cols"
+                            class="settings-item-input" value="5" min="1"></div>
+                </div>
+                <div class="setting-group">
+                    <h4>概率权重 (Weights)</h4>
+                    <div class="setting-row"><label>一次权重 (未中)</label><input type="number" id="first-weight"
+                            class="settings-item-input" value="1" min="1"></div>
+                    <div class="setting-row"><label>二次权重 (已中)</label><input type="number" id="second-weight"
+                            class="settings-item-input" value="4" min="0"></div>
+                </div>
+                <div class="setting-group">
+                    <h4>限制 (Limits)</h4>
+                    <div class="setting-row"><label>最大行动次数</label><input type="number" id="max-actions"
+                            class="settings-item-input" value="250" min="1"></div>
+                </div>
+                <p style="font-size:12px; color:var(--text-light); text-align:center;">（重置启用设置，行动时禁用设置）</p>
+            </div>
+
+            <!-- 统计面板 -->
+            <div class="tab-content" id="tab-stats">
+                <div class="setting-group">
+                    <h4>“行动次数-中签次数”散点图（Scatter）</h4>
+                    <div class="setting-row">
+                        <label>目标统计次数：</label>
+                        <div>
+                            <input type="number" id="times" class="settings-item-input" value="10" min="1" max="100000"
+                                style="margin-right:10px;">
+                            <button class="btn btn-primary" id="btn-run-stats" onclick="runStats()"
+                                style="padding: 6px 12px; font-size: 12px;">运行统计</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="scatterChart_tab3"></canvas>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h4>目标抽签数下，中签概率饼状图（Pie）</h4>
+                    <div class="chart-container">
+                        <canvas id="pieChart_draw"></canvas>
+                    </div>
+                    <div class="slider-wrapper">
+                        <!-- 优化：头部结构 -->
+                        <div class="slider-header">
+                            <label>目标抽签次数：</label>
+                            <input type="number" id="draw_total" class="settings-item-input" value="28" min="1"
+                                max="250" style="width:60px;">
+                        </div>
+                        <div class="range-container">
+                            <input type="range" id="pieChart_slider" class="custom-slider" step="0.01" value="28"
+                                min="1" max="250">
+                            <span id="pieChart_sliderTooltip" class="slider-tooltip">0</span>
+                        </div>
+                    </div>
+                    <p class="result_p">
+                        <span id="d_min">🔷最小值: ???</span>
+                        <span id="d_median">⚖️中位数: ???</span>
+                        <span id="d_max">🔶最大值: ???</span>
+                    </p>
+                </div>
+
+                <div class="setting-group">
+                    <h4>目标中签数下，抽签概率密度图（Density）</h4>
+                    <div class="chart-container">
+                        <canvas id="scatterChart_winning"></canvas>
+                    </div>
+                    <div class="slider-wrapper">
+                        <div class="slider-header">
+                            <label>目标中签次数：</label>
+                            <input type="number" id="winning_total" class="settings-item-input" value="19" min="1"
+                                max="25" style="width:60px;">
+                        </div>
+                        <div class="range-container">
+                            <input type="range" id="densityChart_slider" class="custom-slider" step="0.01" value="19"
+                                min="1" max="25">
+                            <span id="densityChart_sliderTooltip" class="slider-tooltip">0</span>
+                        </div>
+                    </div>
+                    <p class="result_p">
+                        <span id="w_min">🔷最小值: ???</span>
+                        <span id="w_median">⚖️中位数: ???</span>
+                        <span id="w_max">🔶最大值: ???</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 关于 -->
+            <div class="tab-content" id="tab-sponsor">
+                <div class="setting-group" style="text-align: center;">
+                    <p>Created by Ignorant</p>
+                    <p onclick="toggle_sponsorImg()"
+                        style="cursor: pointer; color: var(--primary); text-decoration: underline;">为爱发电，请作者喝杯咖啡 ☕。</p>
+                    <img id="sponsorImg" alt="赞助二维码">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 弹窗 -->
+    <div id="customDialog">
+        <div class="custom-dialog-content">
+            <h2 class="h2_dialog" id="headSpan">提示：</h2>
+            <div id="info_container" style="color:var(--text-light); margin-bottom:20px;"></div>
+            <div>
+                <button id="confirmButton" class="dialog-btn" style="background:var(--primary); color:#fff;">确认</button>
+                <button id="retryButton" class="dialog-btn"
+                    style="background:var(--bg-secondary); color:var(--text-main);">重试</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+<!-- 基本样式 -->
+<style>
+    /* 元素变量 */
+    :root {
+        /* 亮色模式 (默认) */
+        --primary: #5e72e4;
+        --primary-dark: #233dd2;
+        --success: #2dce89;
+        --warning: #fb6340;
+        --info: #11cdef;
+
+        --text-main: #32325d;
+        --text-light: #8898aa;
+        --text-chart: #666;
+        /* 图表文字颜色 */
+
+        --bg-body: #f8f9fe;
+        --bg-card: #ffffff;
+        --bg-secondary: #f4f5f7;
+        /* 面板背景 */
+        --bg-hover: #f6f9fc;
+        --bg-input: #ffffff;
+
+        --border-color: #e9ecef;
+        --shadow: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07);
+
+        --cell-bg: #f7fafc;
+        --cell-border: #e2e8f0;
+        --cell-text: #4a5568;
+
+        --radius: 16px;
+    }
+
+    /* 深色模式 */
+    body.dark-mode {
+        --primary: #758bfd;
+        /* 稍微调亮一点以适应黑底 */
+        --primary-dark: #5e72e4;
+
+        --text-main: #f0f2f5;
+        --text-light: #a0aec0;
+        --text-chart: #a0aec0;
+
+        --bg-body: #121212;
+        --bg-card: #1e1e1e;
+        --bg-secondary: #121212;
+        --bg-hover: #2d3748;
+        --bg-input: #2d3748;
+
+        --border-color: #2d3748;
+        --shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0, 0, 0, 0.3);
+
+        --cell-bg: #2d3748;
+        --cell-border: #4a5568;
+        --cell-text: #e2e8f0;
+    }
+
+    /* 全局样式 */
+    body {
+        font-family: 'Open Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        /* 锁定视口高度 */
+        user-select: none;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* 主题切换按钮 */
+    #theme-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        /* 优化动画：时长增加到0.8s，曲线调整为有弹性的回弹效果 */
+        transition: transform 0.8s cubic-bezier(0.34, 1.3, 0.64, 1), background-color 0.3s;
+
+        color: var(--text-main);
+        z-index: 20;
+    }
+
+    #theme-toggle:hover {
+        background: var(--bg-hover);
+        transform: rotate(30deg);
+        /* 悬停时轻微旋转 */
+    }
+
+    /* 深色模式下的按钮旋转状态：旋转360度并回弹 */
+    body.dark-mode #theme-toggle {
+        transform: rotate(360deg);
+    }
+
+    /* 全屏容器 */
+    .fullscreen-section {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-secondary);
+        transition: background-color 0.3s;
+    }
+</style>
+
+<!-- 第一部分布局 -->
+<style>
+    .main-container {
+        display: flex;
+        flex-direction: row;
+        /* 水行布局 */
+        width: 100%;
+        height: 100%;
+        align-items: stretch;
+        background: var(--bg-card);
+        overflow: hidden;
+        /* 隐藏超出容器的内容 */
+        transition: background-color 0.3s;
+    }
+
+    /* 左侧 信息栏 */
+    .info-panel {
+        flex: 0 0 40%;
+        width: 100%;
+        background: var(--bg-card);
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        padding: 30px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        /* 垂直居中 */
+        overflow-y: auto;
+        /* 允许内部滚动 */
+        z-index: 10;
+        min-width: 0;
+        /* 防止 flex 子项溢出 */
+        position: relative;
+        /* 为绝对定位的按钮提供参考 */
+        transition: background-color 0.3s;
+    }
+
+    /* 右侧 棋盘区域 */
+    .board-panel {
+        flex: 0 0 60%;
+        width: 100%;
+        background: var(--bg-secondary);
+        padding: 20px;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        transition: background-color 0.3s;
+    }
+
+    /* =========================================
+       UI 组件：左侧信息
+       ========================================= */
+
+    /* 标题信息 */
+    .header {
+        margin-bottom: 20px;
+    }
+
+    .header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--primary);
+        margin: 0 0 5px 0;
+        letter-spacing: -1px;
+    }
+
+    .header p {
+        color: var(--text-light);
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* 信息卡片 */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: var(--bg-hover);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: left;
+        border: 1px solid var(--border-color);
+        transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-light);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-main);
+        display: block;
+    }
+
+    .stat-value.highlight {
+        color: var(--success);
+    }
+
+    .stat-value.primary {
+        color: var(--primary);
+    }
+
+    /* 进度条 */
+    .progress-section {
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-main);
+    }
+
+    .progress-container-inner {
+        position: relative;
+        height: 10px;
+        background: var(--border-color);
+        border-radius: 5px;
+        margin-top: 10px;
+        /* 给标记留空间 */
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary) 0%, var(--info) 100%);
+        border-radius: 5px;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .progress-marks {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+    }
+
+    .mark {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 12px;
+        height: 12px;
+        background: var(--bg-card);
+        border: 2px solid #cbd5e0;
+        border-radius: 50%;
+        z-index: 2;
+        transition: all 0.3s;
+        display: flex;
+        /* 确保文字居中 */
+        justify-content: center;
+        align-items: center;
+        font-size: 0;
+        /* 默认隐藏数字，hover显示? 或者不显示 */
+    }
+
+    .mark.active {
+        border-color: var(--success);
+        background: var(--success);
+        box-shadow: 0 0 0 3px rgba(45, 206, 137, 0.2);
+    }
+
+    .mark.new-active {
+        transform: translate(-50%, -50%) scale(1.4);
+        background: var(--warning);
+        border-color: var(--warning);
+    }
+
+    /* 操作按钮 */
+    .btn-group {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 10px;
+        margin-top: auto;
+    }
+
+    .btn {
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11);
+    }
+
+    .btn-primary:active {
+        animation: zoomEffect 0.2s ease-in-out infinite alternate;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-outline:hover {
+        background: rgba(94, 114, 228, 0.1);
+    }
+
+    .btn-outline:active {
+        background: rgba(94, 114, 228, 0.1);
+        animation: zoomEffect 0.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes zoomEffect {
+        0% {
+            transform: scale(1);
+        }
+
+        100% {
+            transform: scale(0.90);
+        }
+    }
+
+    /* =========================================
+       UI 组件：右侧棋盘
+       ========================================= */
+
+    /* 右侧棋盘 */
+    table#chessboard {
+        border-collapse: separate;
+        border-spacing: 8px;
+        /* 增加间距 */
+        background: var(--bg-card);
+        padding: 15px;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        transition: transform 0.3s, background-color 0.3s;
+    }
+
+    td {
+        width: 60px;
+        /* 略微加大 */
+        height: 60px;
+        border: 1px solid var(--cell-border);
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 18px;
+        color: var(--cell-text);
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background-color: var(--cell-bg);
+        user-select: none;
+        position: relative;
+    }
+
+    td:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary);
+    }
+
+    /* 选中时的动画 */
+    .red-border {
+        border: 2px solid #ff6b6b !important;
+        animation: pulse 0.5s ease-in-out;
+        z-index: 5;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.15);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+</style>
+
+<!-- 第二部分布局 -->
+<style>
+    /* 选项卡导航区 */
+    .tabs-section {
+        background: var(--bg-card);
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .tabs {
+        display: flex;
+        background-color: var(--bg-hover);
+        border-radius: 10px;
+        padding: 4px;
+        margin: 0 auto 20px;
+        max-width: 800px;
+        transition: background-color 0.3s;
+    }
+
+    .tab-button {
+        flex: 1;
+        padding: 10px 0;
+        text-align: center;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 8px;
+        color: var(--text-light);
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    .tab-button.active {
+        background-color: var(--bg-card);
+        color: var(--primary);
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-content-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* 设置组样式 */
+    .setting-group {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .setting-group h4 {
+        margin: 0 0 15px 0;
+        font-size: 14px;
+        color: var(--text-light);
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: var(--text-main);
+    }
+
+    .settings-item-input {
+        width: 80px;
+        padding: 6px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        text-align: center;
+        color: var(--text-main);
+        background-color: var(--bg-input);
+        font-weight: 600;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+</style>
+
+<!-- 其他样式 -->
+<style>
+    /* 图表容器 */
+    .chart-container {
+        width: 100%;
+        height: auto;
+        min-height: 250px;
+        position: relative;
+    }
+
+    /* 烟花容器 */
+    .firework {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        top: -44px;
+        /* 调整位置使其居中于标记点 */
+        left: -44px;
+        pointer-events: none;
+        z-index: 100;
+    }
+
+    .firework-particle {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0;
+    }
+
+    .firework-trail {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0;
+    }
+
+    /* 弹窗 */
+    #customDialog {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+        backdrop-filter: blur(4px);
+    }
+
+    .custom-dialog-content {
+        background: var(--bg-card);
+        padding: 30px;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 350px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: var(--text-main);
+    }
+
+    @keyframes popIn {
+        from {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .h2_dialog {
+        margin-top: 0;
+        color: var(--text-main);
+    }
+
+    .dialog-btn {
+        margin: 10px 5px;
+        padding: 8px 20px;
+        border-radius: 20px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    /* 滑块样式优化 */
+    .slider-wrapper {
+        position: relative;
+        margin-top: 15px;
+        color: var(--text-main);
+        /* 移除底部 padding，交给内部元素控制 */
+    }
+
+    /* 新增：滑块头部（标签+输入框） */
+    .slider-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: var(--text-main);
+    }
+
+    /* 新增：Range 容器，用于包裹 range 和 tooltip */
+    .range-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 15px;
+        /* 为下方的 Tooltip 留出空间 */
+    }
+
+    input[type=range] {
+        -webkit-appearance: none;
+        /* 移除默认样式 */
+        width: 100%;
+        background: transparent;
+        margin: 10px 0;
+    }
+
+    input[type=range]:focus {
+        outline: none;
+    }
+
+    /* Webkit (Chrome, Safari, Edge) 轨道样式 */
+    input[type=range]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 6px;
+        cursor: pointer;
+        background: var(--border-color);
+        border-radius: 3px;
+        transition: background-color 0.3s;
+    }
+
+    /* Webkit (Chrome, Safari, Edge) 滑块圆钮样式 */
+    input[type=range]::-webkit-slider-thumb {
+        height: 18px;
+        width: 18px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+        -webkit-appearance: none;
+        margin-top: -6px;
+        /* (轨道高度 - 滑块高度) / 2 = (6 - 18) / 2 = -6 */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: transform 0.1s, background-color 0.3s;
+        border: 2px solid #fff;
+        /* 增加白色描边提升对比度 */
+        z-index: 15;
+        position: relative;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+    }
+
+    /* Tooltip 样式优化：气泡形状（下方） */
+    .slider-tooltip {
+        position: absolute;
+        background: var(--primary);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: bold;
+
+        /* 放到滑块下方 */
+        top: 35px;
+        left: 0;
+        transform: translateX(-50%);
+
+        display: none;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        z-index: 10;
+        pointer-events: none;
+        /* 防止遮挡鼠标 */
+        transition: background-color 0.3s;
+    }
+
+    /* 气泡上方的小三角 (指示向上) */
+    .slider-tooltip::before {
+        content: "";
+        position: absolute;
+        top: -6px;
+        /* 移动到盒子上方 */
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 0 6px 6px 6px;
+        /* 上右下左：上0，下有颜色，形成向上的三角 */
+        border-style: solid;
+        border-color: transparent transparent var(--primary) transparent;
+    }
+
+    /* 统计结果小字 */
+    .result_p {
+        font-size: 16px;
+        color: var(--text-light);
+        display: flex;
+        justify-content: space-around;
+        margin-top: 10px;
+        background: var(--bg-hover);
+        padding: 8px;
+        border-radius: 6px;
+        transition: background-color 0.3s;
+    }
+
+    #sponsorImg {
+        width: 100%;
+        max-width: 300px;
+        display: none;
+        margin: 10px auto;
+    }
+</style>
+
+<script>
+
+    // 初始化
+    let loaded_first = true;    // 是否是第一次加载
+    let rows = 5;        // 行数
+    let cols = 5;    // 列数
+    let board = [];    // 棋盘数组
+    let weights = [];    // 权重数组
+
+    let drawnCount = 0; // 成功抽中次数
+    let currentActions = 0; // 当前行动次数
+
+    let maxActions = 250;    // 最大行动次数
+    let firstWeight = 1;    // 先手权重
+    let secondWeight = 4;    // 后手权重
+    let settingsEnabled = true; // 设置是否可用
+
+    let times = 10; // 模拟次数
+    let draw_total_target = 28; // 目标抽签数量
+    let winning_total_target = 19;  // 目标抽中数量
+    let totalCells = 25;        // 总格子数
+
+    // 元素组件
+    const rows_element = document.getElementById('rows');
+    const cols_element = document.getElementById('cols');
+    const firstWeight_element = document.getElementById('first-weight');
+    const secondWeight_element = document.getElementById('second-weight');
+    const maxActions_element = document.getElementById('max-actions');
+    const times_element = document.getElementById('times');
+    const draw_total_element = document.getElementById('draw_total');
+    const winning_total_element = document.getElementById('winning_total');
+    const themeButton_element = document.getElementById('theme-toggle');
+
+    // 滑块元素 & 输入框元素
+    const lineChart_slider_element = document.getElementById('lineChart_slider');
+    const lineChart_sliderTooltip_element = document.getElementById('lineChart_sliderTooltip');
+    const lineChart_input_element = document.getElementById('lineChart_input'); // 新增
+
+    const pieChart_slider_element = document.getElementById("pieChart_slider");
+    const pieChart_sliderTooltip_element = document.getElementById("pieChart_sliderTooltip");
+
+    const densityChart_slider_element = document.getElementById("densityChart_slider");
+    const densityChart_sliderTooltip_element = document.getElementById("densityChart_sliderTooltip");
+
+    // 图表实例
+    let lineChart = null;
+    let scatterChart = null;
+    let pieChart = null;
+    let densityChart = null;
+
+    // 图表上下文
+    const ctx_lineChart = document.getElementById('lineChart').getContext('2d');
+    const ctx_scatterChart = document.getElementById('scatterChart_tab3').getContext('2d');
+    const ctx_pieChart = document.getElementById('pieChart_draw').getContext('2d');
+    const ctx_densityChart = document.getElementById('scatterChart_winning').getContext('2d');
+
+    // 数据存储
+    let data_single = [{ x: 0, y: 0 }];
+    let data_multiple_brief = [{ x: 0, y: 0 }];
+    let data_multiple_full = [{ x: 0, y: 0 }];
+    let data3_endPoint = [];
+
+    // 初始化
+    document.addEventListener("DOMContentLoaded", () => {
+        initTheme(); // 初始化主题
+        initEvents();   // 初始化事件监听
+        resetBoard();   // 重置棋盘
+        drawChart_line(); // 初始绘制折线图
+
+        // 初始化输入值
+        rows_element.value = rows;
+        cols_element.value = cols;
+        firstWeight_element.value = firstWeight;
+        secondWeight_element.value = secondWeight;
+        maxActions_element.value = maxActions;
+        draw_total_element.value = draw_total_target;
+        winning_total_element.value = winning_total_target;
+
+
+        // 移动端适配处理
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                const text = btn.textContent;
+                if (text.includes('设置')) btn.textContent = '⚙️设置';
+                if (text.includes('分析')) btn.textContent = '✒️分析';
+                if (text.includes('统计')) btn.textContent = '📈统计';
+                if (text.includes('关于')) btn.textContent = 'ℹ️关于';
+            });
+        }
+    });
+
+    /* =========================================
+       主题控制
+       ========================================= */
+    function initTheme() {
+        // 取消本地存储读取，默认亮色
+        document.body.classList.remove('dark-mode');
+        updateThemeUI();
+        updateChartTheme();
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+
+        updateThemeUI();
+        updateChartTheme();
+
+        // 强制重绘图表以应用新颜色
+        if (lineChart) lineChart.update();
+        if (scatterChart) scatterChart.update();
+        if (pieChart) pieChart.update();
+        if (densityChart) densityChart.update();
+    }
+
+    function updateThemeUI() {
+        const isDark = document.body.classList.contains('dark-mode');
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) {
+            themeBtn.textContent = isDark ? '🌙' : '☀'; // 切换图标
+        }
+    }
+
+    function updateChartTheme() {
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ? '#a0aec0' : '#666';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+        Chart.defaults.scale.grid.color = gridColor;
+    }
+
+    function initEvents() {
+        // 输入监听
+        [rows_element, cols_element, firstWeight_element, secondWeight_element, maxActions_element].forEach(el => {
+            el.addEventListener('input', () => {
+                updateValue();
+                updateLimit(); // 限制更新需要重新计算
+            });
+        });
+
+        times_element.addEventListener('input', updateValue);
+
+        // 为所有 type="number" 的输入框添加滚轮支持
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('wheel', function (e) {
+                e.preventDefault(); // 防止页面滚动
+
+                // 确定步长，默认为1，如果有step属性则使用step
+                const step = parseFloat(this.step) || 1;
+                const min = parseFloat(this.min);
+                const max = parseFloat(this.max);
+                let val = parseFloat(this.value) || 0;
+
+                if (e.deltaY < 0) {
+                    val += step; // 向上滚动增加
+                } else {
+                    val -= step; // 向下滚动减少
+                }
+
+                // 检查范围
+                if (!isNaN(min) && val < min) val = min;
+                if (!isNaN(max) && val > max) val = max;
+
+                this.value = val;
+
+                // 触发 input 事件以更新相关逻辑
+                this.dispatchEvent(new Event('input'));
+            }, { passive: false });
+        });
+
+        // 选项卡切换
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                button.classList.add('active');
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+
+                if (tabId === 'tab-stats' && loaded_first) {
+                    getdata_3_mul(times);
+                    loaded_first = false;
+                }
+                if (tabId === 'tab-stats') {
+                    // 平滑滚动
+                    document.querySelector(".tabs-section").scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'      // 滚动到选项卡的顶部
+                    });
+                }
+                else {
+                    // 平滑滚动
+                    document.querySelector(".tabs-section").scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'end'      // 滚动到选项卡的底部
+                    });
+                }
+                toggle_sponsorImg(true);
+            });
+        });
+
+        // =======================
+        // 折线图滑块逻辑 (Smooth)
+        // =======================
+        lineChart_slider_element.addEventListener('input', function () {
+            let val = Math.round(this.value);
+            lineChart_input_element.value = Math.round(this.value);
+            updateSliderTooltip(this, lineChart_sliderTooltip_element, this.value);
+            drawChart_line_update(lineChart, data_single.slice(0, val + 1));
+        });
+
+        // 折线图输入框逻辑
+        lineChart_input_element.addEventListener('input', function () {
+            let val = parseInt(this.value);
+            lineChart_slider_element.value = val;
+            drawChart_line_update(lineChart, data_single.slice(0, val + 1));
+        });
+
+        // =======================
+        // 饼图滑块逻辑 (Smooth)
+        // =======================
+        pieChart_slider_element.addEventListener('input', function () {
+            draw_total_target = Math.round(this.value);
+            draw_total_element.value = draw_total_target;
+            updateSliderTooltip(this, pieChart_sliderTooltip_element, this.value);
+            drawChart_pie();
+        });
+
+        draw_total_element.addEventListener('input', function () {
+            draw_total_target = parseInt(this.value);
+            pieChart_slider_element.value = draw_total_target;
+            drawChart_pie();
+        });
+
+        // =======================
+        // 密度图滑块逻辑 (Smooth)
+        // =======================
+        densityChart_slider_element.addEventListener('input', function () {
+            winning_total_target = Math.round(this.value);
+            winning_total_element.value = winning_total_target;
+            updateSliderTooltip(this, densityChart_sliderTooltip_element, this.value);
+            drawChart_density();
+        });
+
+        winning_total_element.addEventListener('input', function () {
+            winning_total_target = parseInt(this.value);
+            densityChart_slider_element.value = winning_total_target;
+            drawChart_density();
+        });
+    }
+
+    /* =========================================
+       游戏核心逻辑
+       ========================================= */
+
+    const table = document.getElementById("chessboard");
+
+    function createBoard() {
+        table.innerHTML = "";
+        for (let i = 0; i < rows; i++) {
+            const row = document.createElement("tr");
+            board[i] = [];
+            for (let j = 0; j < cols; j++) {
+                const cell = document.createElement("td");
+                cell.id = `cell-${i}-${j}`;
+                cell.dataset.value = "0";
+                row.appendChild(cell);
+                board[i][j] = 0;
+            }
+            table.appendChild(row);
+        }
+    }
+
+    function performAction() {
+        if (drawnCount >= totalCells) return;
+
+        const [row, col] = selectCell(board);
+        const cellElement = document.getElementById(`cell-${row}-${col}`);
+        board[row][col]++;
+        currentActions++;
+        cellElement.textContent = board[row][col];
+
+        if (board[row][col] === 1) {
+            drawnCount++;
+        }
+
+        // 颜色逻辑
+        if (board[row][col] <= 5) {
+            let alpha = Math.min(0.2 + board[row][col] * 0.1, 1);
+            cellElement.style.backgroundColor = `rgba(255, 235, 59, ${alpha})`; // 黄
+            cellElement.style.color = '#333'; // 确保浅色背景下文字可见
+        } else if (board[row][col] <= 10) {
+            let alpha = Math.min(0.2 + (board[row][col] - 5) * 0.1, 1);
+            cellElement.style.backgroundColor = `rgba(255, 165, 0, ${alpha})`; // 橙
+            cellElement.style.color = '#333';
+        } else {
+            let alpha = Math.min(0.2 + (board[row][col] - 10) * 0.1, 1);
+            cellElement.style.backgroundColor = `rgba(255, 87, 34, ${alpha})`; // 红
+            cellElement.style.color = '#fff'; // 深色背景下文字变白
+        }
+
+        // 动画
+        cellElement.classList.remove("red-border");
+        void cellElement.offsetWidth; // Trigger reflow
+        cellElement.classList.add("red-border");
+
+        updateStats();
+        disableSettings();
+        data2_push(currentActions, drawnCount);
+
+        // 更新折线图范围
+        lineChart_slider_element.max = currentActions;
+        lineChart_slider_element.value = currentActions; // 自动跟随到最新
+        lineChart_input_element.max = currentActions;
+        lineChart_input_element.value = currentActions;
+
+        drawChart_line();
+
+        checkGameEnd();
+    }
+
+    function selectCell(array) {
+        weights = [];
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                weights.push(array[i][j] === 0 ? firstWeight : secondWeight);
+            }
+        }
+
+        let totalWeight = weights.reduce((acc, cur) => acc + cur, 0);
+        let random = Math.random() * totalWeight;
+
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                random -= weights[i * cols + j];
+                if (random <= 0) {
+                    return [i, j];
+                }
+            }
+        }
+        return [0, 0]; // fallback
+    }
+
+    function resetBoard() {
+        board = [];
+        drawnCount = 0;
+        currentActions = 0;
+        updateValue(); // 确保使用当前设置
+        init_data2();
+        createBoard();
+        markGenerate(1, totalCells, 6);
+        updateStats();
+        enableSettings();
+
+        // 重置折线图滑块
+        lineChart_slider_element.max = 0.1; // 重置为小值
+        lineChart_slider_element.value = 0;
+        lineChart_input_element.max = 0;
+        lineChart_input_element.value = 0;
+
+        drawChart_line();
+    }
+
+    function checkGameEnd() {
+        if (drawnCount === totalCells) {
+            showCustomDialog("恭喜：", ["所有方格已翻转！"]);
+        } else if (currentActions >= maxActions) {
+            // 强制翻开
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = 1;
+                        const el = document.getElementById(`cell-${i}-${j}`);
+                        el.textContent = "-";
+                        el.style.backgroundColor = "rgba(45, 206, 137, 0.3)";
+                        el.style.color = "var(--text-main)";
+                    }
+                }
+            }
+            drawnCount = totalCells;
+            updateStats();
+            showCustomDialog("提示：", ["行动次数已达到上限", "已强制翻转剩余格子"]);
+        }
+    }
+
+    function updateStats() {
+        document.getElementById("drawn-count").textContent = drawnCount;
+        document.getElementById("current-actions").textContent = currentActions;
+        document.getElementById("progress-value").textContent = parseInt(drawnCount / totalCells * 100) + "%";
+        updateProgress();
+    }
+
+    function updateValue() {
+        rows = parseInt(rows_element.value);
+        cols = parseInt(cols_element.value);
+        totalCells = rows * cols;
+        firstWeight = parseInt(firstWeight_element.value);
+        secondWeight = parseInt(secondWeight_element.value);
+        maxActions = parseInt(maxActions_element.value);
+        times = parseInt(times_element.value);
+    }
+
+    function updateLimit() {
+        // 更新统计图表的滑块上限
+        loaded_first = true;
+        draw_total_element.max = maxActions;
+        pieChart_slider_element.max = maxActions;
+
+        winning_total_element.max = totalCells;
+        densityChart_slider_element.max = totalCells;
+
+        // 强制重绘
+        if (!settingsEnabled) return; // 如果正在游戏中，不强制刷新图表以免影响
+    }
+
+    function toggleSettings(object, flag) {
+        object.disabled = flag;
+        object.style.opacity = flag ? 0.5 : 1;
+    }
+    function enableSettings() {
+        [rows_element, cols_element, firstWeight_element, secondWeight_element, maxActions_element].forEach(el => toggleSettings(el, false));
+        settingsEnabled = true;
+    }
+    function disableSettings() {
+        if (settingsEnabled) {
+            [rows_element, cols_element, firstWeight_element, secondWeight_element, maxActions_element].forEach(el => toggleSettings(el, true));
+            settingsEnabled = false;
+        }
+    }
+
+    /* =========================================
+   进度条与烟花
+   ========================================= */
+    let marks_elements = [];
+
+    function markGenerate(min, max, num) {
+        const container = document.querySelector('.progress-marks');
+        container.innerHTML = '';
+
+        const step = (max - min) / (num - 1);
+        const marks = [];
+        for (let i = 0; i < num; i++) marks.push(Math.round(min + i * step));
+        if (!marks.includes(max)) marks[marks.length - 1] = max;
+
+        const uniqueMarks = [...new Set(marks)].sort((a, b) => a - b);
+
+        marks_elements = uniqueMarks.map(val => {
+            const mark = document.createElement('div');
+            mark.className = 'mark';
+            mark.dataset.value = val;
+
+            const fw = document.createElement('div');
+            fw.className = 'firework';
+            mark.appendChild(fw);
+
+            // 位置计算 (0% - 100%)
+            const leftPct = (val / max) * 100;
+            mark.style.left = `${leftPct}%`;
+
+            container.appendChild(mark);
+            return mark;
+        });
+    }
+
+    function updateProgress() {
+        const pct = (drawnCount / totalCells) * 100;
+        document.getElementById('progress-fill').style.width = `${pct}%`;
+
+        marks_elements.forEach(mark => {
+            const val = parseInt(mark.dataset.value);
+            if (drawnCount >= val) {
+                if (!mark.classList.contains('active')) {
+                    mark.classList.add('active');
+                    mark.classList.add('new-active');
+                    createFireworks(mark.querySelector('.firework'));
+                }
+            } else {
+                mark.classList.remove('active', 'new-active');
+            }
+        });
+    }
+
+    // 烟花
+    function createFireworks(container) {
+        container.innerHTML = '';
+        const colors = ['#f56565', '#4299e1', '#48bb78', '#ed8936', '#9f7aea'];
+        for (let i = 0; i < 16; i++) {
+            const p = document.createElement('div');
+            p.className = 'firework-particle';
+            const size = 3 + Math.random() * 5;
+            p.style.width = size + 'px'; p.style.height = size + 'px';
+            p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            p.style.left = '50%'; p.style.top = '50%';
+
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 30 + Math.random() * 40;
+
+            const anim = p.animate([
+                { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+                { transform: `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px)) scale(1.5)`, opacity: 0 }
+            ], { duration: 800 + Math.random() * 400, easing: 'cubic-bezier(0, .9, .57, 1)' });
+
+            container.appendChild(p);
+        }
+    }
+
+    /* =========================================
+       数据管理
+       ========================================= */
+    function init_data2() { data_single = [{ x: 0, y: 0 }]; }
+    function data2_push(x, y) { data_single.push({ x, y }); }
+    function init_data3() {
+        data_multiple_brief = [{ x: 0, y: 0 }];
+        data_multiple_full = [{ x: 0, y: 0 }];
+        data3_endPoint = [];
+    }
+
+    // 运行统计函数
+    function runStats() {
+        const btn = document.getElementById('btn-run-stats');
+        const originalText = btn.innerText;
+        btn.innerText = "计算中..."; // 提示用户正在计算
+        btn.disabled = true;
+        const N = parseInt(document.getElementById('times').value);
+        getdata_3_mul(N);
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+
+    // 统计函数
+    function getdata_3_mul(N) {
+        init_data3();
+
+        for (let round = 0; round < N; round++) {
+
+            let tempBoard = Array.from({ length: rows }, () => new Array(cols).fill(0));
+            let uniqueFound = 0, currentStep = 0;
+            let ended = false;
+
+            while (!ended) {
+
+                let totalW = 0;
+                // 第一次遍历：计算总权重
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        totalW += (tempBoard[r][c] === 0 ? firstWeight : secondWeight);
+                    }
+                }
+
+                let rand = Math.random() * totalW;
+                let r = 0, c = 0;
+
+                // 第二次遍历：根据随机数确定位置
+                // 使用 label 跳出双层循环
+                searchLoop:
+                for (r = 0; r < rows; r++) {
+                    for (c = 0; c < cols; c++) {
+                        let weight = (tempBoard[r][c] === 0 ? firstWeight : secondWeight);
+                        rand -= weight;
+                        if (rand <= 0) {
+                            break searchLoop;
+                        }
+                    }
+                }
+                // 边界保护：如果浮点数精度问题导致没选到，默认选最后一个（虽极罕见）
+                if (r === rows) { r = rows - 1; c = cols - 1; }
+
+                tempBoard[r][c]++;
+                currentStep++;
+                if (tempBoard[r][c] === 1) uniqueFound++;
+
+                data_multiple_full.push({ x: currentStep, y: uniqueFound });
+
+                if (tempBoard[r][c] === 1) data_multiple_brief.push({ x: currentStep, y: uniqueFound });
+
+                // 结束条件
+                if (uniqueFound === totalCells) {
+                    data3_endPoint.push(currentStep);
+                    ended = true;
+                } else if (currentStep >= maxActions) {
+                    data_multiple_brief.push({ x: currentStep, y: totalCells });
+                    data_multiple_full.push({ x: currentStep, y: totalCells });
+                    ended = true;
+                }
+            }
+        }
+
+        // 绘制所有高级图表
+        drawChart_scatter();
+        drawChart_pie();
+        drawChart_density();
+    }
+
+    // 数据处理辅助函数
+    function getBubbleChartData(data) {
+        const countMap = {};
+        data.forEach(item => {
+            const key = `${item.x},${item.y}`;
+            countMap[key] = (countMap[key] || 0) + 1;
+        });
+        return Object.keys(countMap).map(key => {
+            const [x, y] = key.split(',');
+            return { x: parseFloat(x), y: parseFloat(y), r: countMap[key] };
+        });
+    }
+
+    function getScatterChartData(data, p = false) {
+        const countMap = {};
+        data.forEach(item => { countMap[item] = (countMap[item] || 0) + 1; });
+        const totalCount = data.length;
+        return Object.keys(countMap).map(key => {
+            let x = parseInt(key);
+            let y = p ? (countMap[key] / totalCount * 100) : countMap[key];
+            return { x, y };
+        });
+    }
+
+    function getPieChartData(data) {
+        const countMap = getScatterChartData(data);
+        const probabilities = countMap.map(item => ({
+            y: item.x,
+            count: item.y,
+            probability: (item.y / data.length) * 100
+        })).sort((a, b) => b.probability - a.probability);
+
+        const yValues = probabilities.map(item => item.count);
+        const labels = probabilities.map(item => `index: ${item.y}`);
+        const colors = probabilities.map(() => getRandomColor([0, 360], [30, 70], [70, 90]));
+
+        return {
+            labels: labels,
+            datasets: [{
+                label: 'Value Distribution',
+                data: yValues,
+                backgroundColor: colors,
+                borderColor: ['#fff'],
+                borderWidth: 1,
+                extra: probabilities
+            }]
+        };
+    }
+
+    function accumulatedProbability(data) {
+        const sortedData = [...data].sort((a, b) => a.x - b.x);
+        let cumulative = 0;
+        return sortedData.map(item => {
+            cumulative += item.y;
+            return { x: item.x, y: item.y, r: cumulative };
+        });
+    }
+
+    function filterData(data, targetValue, keyChecked, keySelected) {
+        return data.filter(item => item[keyChecked] == targetValue).map(item => item[keySelected]);
+    }
+
+    function supplementData_draw(data, targetValue) {
+        data3_endPoint.forEach(value => { if (targetValue > value) data.push(totalCells); });
+    }
+
+    function supplementData_winning(data, targetValue) {
+        let supplementCount = targetValue - data.length;
+        for (let i = 0; i < supplementCount; i++) data.push(maxActions);
+    }
+
+    function calculateStatistics(data) {
+        if (data.length === 0) return { min: null, median: null, max: null };
+        data.sort((a, b) => a - b);
+        const medianValue = data.length % 2 === 0
+            ? (data[data.length / 2 - 1] + data[data.length / 2]) / 2
+            : data[Math.floor(data.length / 2)];
+        return { min: data[0], median: medianValue, max: data[data.length - 1] };
+    }
+
+    function getRandomColor(hRange = [0, 360], sRange = [0, 100], lRange = [0, 100]) {
+        const h = Math.floor(Math.random() * (hRange[1] - hRange[0])) + hRange[0];
+        const s = Math.floor(Math.random() * (sRange[1] - sRange[0])) + sRange[0];
+        const l = Math.floor(Math.random() * (lRange[1] - lRange[0])) + lRange[0];
+        return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+
+    /* =========================================
+   图表绘制
+   ========================================= */
+
+    // 销毁图例
+    function destroyChart(chartInstance) {
+        if (chartInstance) chartInstance.destroy();
+    }
+
+    // 折线图绘制
+    function drawChart_line() {
+        if (!lineChart) {
+            lineChart = drawChart_line_init("", ctx_lineChart, lineChart, data_single);
+        } else {
+            drawChart_line_update(lineChart, data_single);
+        }
+    }
+    function drawChart_line_update(chartInstance, data) {
+        chartInstance.data.labels = data.map(item => `(${item.x}, ${item.y})`);
+        chartInstance.data.datasets[0].data = data;
+        chartInstance.update();
+    }
+    function drawChart_line_init(titleName, ctx, chartInstance, data) {
+        destroyChart(chartInstance);
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(item => `(${item.x}, ${item.y})`),
+                datasets: [{
+                    data: data,
+                    backgroundColor: 'rgba(0, 120, 212,0.1)',
+                    borderColor: 'rgba(0, 120, 212,0.6)',
+                    borderWidth: 1,
+                    radius: 3,
+                    fill: true,
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => `Index: ${ctx[0].label}`,
+                            label: (item) => 'Total: ' + item.raw.y.toFixed(0)
+                        }
+                    },
+                    title: { display: !!titleName, text: titleName, position: 'bottom', font: { size: 14 } }
+                },
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', ticks: { stepSize: 1, beginAtZero: true } },
+                    y: { ticks: { stepSize: 1, beginAtZero: true, callback: (v) => v.toFixed(0) } }
+                }
+            }
+        });
+    }
+
+    // 散点图绘制
+    function drawChart_scatter() {
+        let data = getBubbleChartData(data_multiple_brief);
+        scatterChart = drawChart_scatter_init("", ctx_scatterChart, scatterChart, data);
+    }
+    function drawChart_scatter_init(titleName, ctx, chartInstance, data) {
+        destroyChart(chartInstance);
+        return new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                labels: data.map(item => `(${item.x}, ${item.y})`),
+                datasets: [{
+                    data: data,
+                    backgroundColor: 'rgba(0, 120, 212,0.4)',
+                    borderColor: 'rgba(0, 120, 212,0.6)',
+                    borderWidth: 1,
+                    radius: 3,
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => ctx[0].label,
+                            label: (item) => 'Count: ' + item.raw.r.toFixed(0)
+                        }
+                    },
+                    title: { display: !!titleName, text: titleName, position: 'bottom', font: { size: 14 } }
+                },
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', ticks: { stepSize: 1, beginAtZero: true } },
+                    y: { ticks: { stepSize: 1, beginAtZero: true, callback: (v) => v.toFixed(0) } }
+                }
+            }
+        });
+    }
+    // 饼图绘制
+    let pieChart_data;
+    function drawChart_pie_getData() {
+        pieChart_data = filterData(data_multiple_full, draw_total_target, 'x', 'y');
+        supplementData_draw(pieChart_data, draw_total_target);
+    }
+    function drawChart_pie() {
+        drawChart_pie_getData();
+        drawChart_pie_textUpdate();
+        let data = getPieChartData(pieChart_data);
+        if (!pieChart) {
+            pieChart = drawChart_pie_init("", ctx_pieChart, pieChart, data);
+        } else {
+            drawChart_pie_update(pieChart, data);
+        }
+    }
+    function drawChart_pie_update(chartInstance, data) {
+        chartInstance.data = data;
+        chartInstance.update();
+    }
+    function drawChart_pie_textUpdate() {
+        let data = calculateStatistics(pieChart_data);
+        document.getElementById('d_min').textContent = `🔷最小值: ${data.min}`;
+        document.getElementById('d_median').textContent = `⚖️中位数: ${data.median}`;
+        document.getElementById('d_max').textContent = `🔶最大值: ${data.max}`;
+    }
+    function drawChart_pie_init(titleName, ctx, chartInstance, data, topN = 15) {
+        destroyChart(chartInstance);
+        return new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                plugins: {
+                    legend: {
+                        display: true, position: 'right',
+                        labels: { filter: (item, data) => data.labels.indexOf(item.text) < topN }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                let d = item.dataset.extra[item.dataIndex];
+                                let prob = d.probability % 1 === 0 ? d.probability.toFixed(1) : parseFloat(d.probability.toFixed(4));
+                                return `Probability: ${prob}%`;
+                            }
+                        }
+                    },
+                    title: { display: !!titleName, text: titleName, position: 'bottom', font: { size: 14 } }
+                },
+                responsive: true, maintainAspectRatio: false
+            }
+        });
+    }
+
+    // 密度图绘制
+    let densityChart_data;
+    function drawChart_density_getData() {
+        densityChart_data = filterData(data_multiple_brief, winning_total_target, 'y', 'x');
+        supplementData_winning(densityChart_data, times);
+    }
+    function drawChart_density() {
+        drawChart_density_getData();
+        drawChart_density_textUpdate();
+        let sData = getScatterChartData(densityChart_data, true);
+        let data = accumulatedProbability(sData);
+        if (!densityChart) {
+            densityChart = drawChart_density_init("", ctx_densityChart, densityChart, data);
+        } else {
+            drawChart_density_update(densityChart, data);
+        }
+    }
+    function drawChart_density_update(chartInstance, data) {
+        chartInstance.data.datasets[0].data = data;
+        chartInstance.data.labels = data.map(item => `(${item.x}, ${item.y})`);
+        chartInstance.update();
+    }
+    function drawChart_density_textUpdate() {
+        let data = calculateStatistics(densityChart_data);
+        document.getElementById('w_min').textContent = `🔷最小值: ${data.min}`;
+        document.getElementById('w_median').textContent = `⚖️中位数: ${data.median}`;
+        document.getElementById('w_max').textContent = `🔶最大值: ${data.max}`;
+    }
+    function drawChart_density_init(titleName, ctx, chartInstance, data) {
+        destroyChart(chartInstance);
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => `(${item.x}, ${item.y})`),
+                datasets: [{
+                    data: data,
+                    backgroundColor: 'rgba(0, 120, 212,0.4)',
+                    borderColor: 'rgba(0, 120, 212,0.6)',
+                    borderWidth: 1,
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false, // 隐藏图例颜色块
+                        callbacks: {
+                            title: (ctx) => `Index: ${ctx[0].label}`,
+                            label: (item) => [`🌟P: ${item.raw.y.toFixed(2)}%`, `🎡ACC: ${item.raw.r.toFixed(2)}%`]
+                        }
+                    },
+                    title: { display: !!titleName, text: titleName, position: 'bottom', font: { size: 14 } }
+                },
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', ticks: { stepSize: 1, beginAtZero: true } },
+                    y: { ticks: { beginAtZero: true, callback: (v) => v.toFixed(0) + '%' } }
+                }
+            }
+        });
+    }
+
+    // 滑块 Tooltip 优化：位置固定在下方 + 防抖动逻辑
+    const tooltipTimeouts = {}; // 用于存储每个滑块的定时器ID
+
+    function updateSliderTooltip(slider, tooltip, val) {
+        // 清除之前的定时器，防止在拖动过程中隐藏
+        if (tooltipTimeouts[slider.id]) {
+            clearTimeout(tooltipTimeouts[slider.id]);
+        }
+
+        tooltip.style.display = 'block';
+        tooltip.textContent = Math.round(val);
+        const pct = (val - slider.min) / (slider.max - slider.min);
+
+        // 计算 left 位置 (让其跟随滑块移动)
+        tooltip.style.left = `calc(${pct * 100}% + ${(0.5 - pct) * 18}px)`; // 18px 是 thumb 宽度
+
+        // 设置新的定时器，停止操作2秒后隐藏
+        tooltipTimeouts[slider.id] = setTimeout(() => {
+            tooltip.style.display = 'none';
+        }, 2000);
+    }
+
+    /* =========================================
+        杂项
+        ========================================= */
+
+    function showCustomDialog(title, texts) {
+        document.getElementById('headSpan').textContent = title;
+        const container = document.getElementById('info_container');
+        container.innerHTML = '';
+        texts.forEach(t => {
+            const p = document.createElement('p');
+            p.textContent = t;
+            container.appendChild(p);
+        });
+        document.getElementById('customDialog').style.display = 'flex';
+    }
+
+    document.getElementById('confirmButton').onclick = () => document.getElementById('customDialog').style.display = 'none';
+    document.getElementById('retryButton').onclick = () => {
+        document.getElementById('customDialog').style.display = 'none';
+        resetBoard();
+    };
+
+    function toggle_sponsorImg(flag) {
+
+        const img = document.getElementById('sponsorImg');
+        // 如果未传入参数 flag，则根据当前显示状态计算默认值
+        if (flag === undefined) {
+            flag = img.style.display === 'block';
+        }
+        // 根据 flag 的值切换图片显示状态
+        img.style.display = flag ? 'none' : 'block';
+    }
+</script>
+
+</html>
